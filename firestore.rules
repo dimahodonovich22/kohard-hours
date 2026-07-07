@@ -20,11 +20,15 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
-      // Самостоятельная регистрация: только свой документ, только worker/pending
-      allow create: if signedIn()
-        && request.auth.uid == uid
-        && request.resource.data.role == 'worker'
-        && request.resource.data.status == 'pending';
+      // Самостоятельная регистрация (свой документ, worker/pending)
+      // ИЛИ админ создаёт работника напрямую (сразу active)
+      allow create: if (signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.role == 'worker'
+          && request.resource.data.status == 'pending')
+        || (isAdmin()
+          && request.resource.data.role == 'worker'
+          && request.resource.data.status == 'active');
       // Работник меняет только имя/телефон/язык; роль и статус — только админ
       allow update: if isAdmin()
         || (signedIn()
