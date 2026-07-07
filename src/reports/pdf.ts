@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next'
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces'
-import { formatMinutes, travelMinutes, workedMinutes, type WorkerSummary } from './data'
+import { formatMinutes, formatMoney, shiftEarnings, travelMinutes, workedMinutes, type WorkerSummary } from './data'
 
 const BRAND_DARK = '#13743D'
 const INK = '#161616'
@@ -64,6 +64,7 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
       th(t('admin.travelH'), true),
       th(t('admin.lunchH'), true),
       th(t('admin.totalH'), true),
+      th(t('admin.earnedH'), true),
     ],
     ...summaries.map((s) => [
       td(s.userName),
@@ -72,6 +73,7 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
       td(formatMinutes(s.travelMin), { center: true }),
       td(formatMinutes(s.lunchMin), { center: true }),
       td(formatMinutes(s.workMin + s.travelMin), { center: true, bold: true }),
+      td(formatMoney(s.earnings), { center: true, bold: true }),
     ]),
     [
       td(t('common.total'), { bold: true }),
@@ -80,6 +82,7 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
       td(formatMinutes(sum((s) => s.travelMin)), { center: true, bold: true }),
       td(formatMinutes(sum((s) => s.lunchMin)), { center: true, bold: true }),
       td(formatMinutes(sum((s) => s.workMin + s.travelMin)), { center: true, bold: true }),
+      td(formatMoney(sum((s) => s.earnings)), { center: true, bold: true }),
     ],
   ]
 
@@ -88,7 +91,7 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
     {
       table: {
         headerRows: 1,
-        widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto'],
+        widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
         body: [
           [
             th(t('report.date')),
@@ -98,6 +101,8 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
             th(t('report.lunchMin'), true),
             th(t('report.travelMin'), true),
             th(t('report.workedH'), true),
+            th(t('admin.rateH'), true),
+            th(t('admin.earnedH'), true),
           ],
           ...w.shifts.map((s) => [
             td(s.date.split('-').reverse().join('.')),
@@ -107,6 +112,8 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
             td(s.lunchMinutes ? String(s.lunchMinutes) : '—', { center: true }),
             td(travelMinutes(s) ? formatMinutes(travelMinutes(s)) : '—', { center: true }),
             td(formatMinutes(workedMinutes(s)), { center: true, bold: true }),
+            td(s.hourlyRate ? formatMoney(s.hourlyRate) : '—', { center: true }),
+            td(formatMoney(shiftEarnings(s)), { center: true, bold: true }),
           ]),
         ],
       },
@@ -161,7 +168,7 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
     }),
     content: [
       {
-        table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto', 'auto', 'auto'], body: summaryBody },
+        table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'], body: summaryBody },
         layout: tableLayout,
       },
       ...detailSections,

@@ -39,6 +39,8 @@ export interface Shift {
   lunchMinutes: number
   travelStartTime: string | null
   travelEndTime: string | null
+  /** Ставка €/час, вводит работник при приезде */
+  hourlyRate: number
   status: 'open' | 'closed'
   editedByAdmin: AdminEdit | null
 }
@@ -70,4 +72,15 @@ export function formatMinutes(min: number): string {
 /** Часы с десятичной дробью для Excel, напр. 7.5 */
 export function minutesToDecimal(min: number): number {
   return Math.round((min / 60) * 100) / 100
+}
+
+/** Заработок за смену = отработанные часы × ставка (дорога не оплачивается) */
+export function shiftEarnings(s: Shift): number {
+  const hours = workedMinutes(s) / 60
+  return Math.round(hours * (s.hourlyRate || 0) * 100) / 100
+}
+
+/** Формат денег: «€ 123.45» */
+export function formatMoney(amount: number): string {
+  return `€ ${amount.toFixed(2)}`
 }

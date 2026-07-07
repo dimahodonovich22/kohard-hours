@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context/AuthContext'
 import { watchUserShifts } from '@/lib/shifts'
-import { formatMinutes, travelMinutes, workedMinutes, type Shift } from '@/lib/types'
+import {
+  formatMinutes,
+  formatMoney,
+  shiftEarnings,
+  travelMinutes,
+  workedMinutes,
+  type Shift,
+} from '@/lib/types'
 import { humanDate } from '@/lib/dates'
 import { Card, Chip, EmptyState, SectionTitle, Spinner } from '@/components/ui'
 import { PeriodPicker, usePeriod } from '@/components/PeriodPicker'
@@ -30,11 +37,13 @@ export function HistoryPage() {
   const totals = useMemo(() => {
     let work = 0
     let travel = 0
+    let earned = 0
     for (const s of shifts ?? []) {
       work += workedMinutes(s)
       travel += travelMinutes(s)
+      earned += shiftEarnings(s)
     }
-    return { work, travel }
+    return { work, travel, earned: Math.round(earned * 100) / 100 }
   }, [shifts])
 
   const dayNames = t('days', { returnObjects: true }) as Record<string, string>
@@ -53,14 +62,20 @@ export function HistoryPage() {
       ) : (
         <>
           <Card className="animate-rise flex divide-x divide-mist">
-            <div className="flex-1 px-4 py-4 text-center">
+            <div className="flex-1 px-3 py-4 text-center">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate">{t('history.worked')}</p>
-              <p className="mt-1 font-display text-2xl font-bold text-brand-dark">{formatMinutes(totals.work)}</p>
+              <p className="mt-1 font-display text-xl font-bold text-brand-dark">{formatMinutes(totals.work)}</p>
             </div>
-            <div className="flex-1 px-4 py-4 text-center">
+            <div className="flex-1 px-3 py-4 text-center">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate">{t('history.travel')}</p>
-              <p className="mt-1 font-display text-2xl font-bold text-ink">{formatMinutes(totals.travel)}</p>
+              <p className="mt-1 font-display text-xl font-bold text-ink">{formatMinutes(totals.travel)}</p>
             </div>
+            {totals.earned > 0 && (
+              <div className="flex-1 px-3 py-4 text-center">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate">{t('history.earned')}</p>
+                <p className="mt-1 font-display text-xl font-bold text-brand-dark">{formatMoney(totals.earned)}</p>
+              </div>
+            )}
           </Card>
 
           <SectionTitle>{t('nav.history')}</SectionTitle>

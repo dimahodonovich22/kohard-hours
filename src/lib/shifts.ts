@@ -32,6 +32,7 @@ export async function openShift(opts: {
   objectName: string
   arrivalTime: string
   photo: File | Blob
+  hourlyRate: number
   travelStartTime?: string | null
   travelEndTime?: string | null
 }): Promise<string> {
@@ -55,6 +56,7 @@ export async function openShift(opts: {
     lunchMinutes: 0,
     travelStartTime: opts.travelStartTime ?? null,
     travelEndTime: opts.travelEndTime ?? null,
+    hourlyRate: opts.hourlyRate || 0,
     status: 'open',
     editedByAdmin: null,
   })

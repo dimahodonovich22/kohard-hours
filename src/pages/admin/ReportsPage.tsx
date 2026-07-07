@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { watchAllShifts } from '@/lib/shifts'
-import { formatMinutes, travelMinutes, workedMinutes, type Shift } from '@/lib/types'
+import {
+  formatMinutes,
+  formatMoney,
+  shiftEarnings,
+  travelMinutes,
+  workedMinutes,
+  type Shift,
+} from '@/lib/types'
 import { humanDate } from '@/lib/dates'
 import { Button, Card, EmptyState, SectionTitle, Spinner } from '@/components/ui'
 import { PeriodPicker, usePeriod } from '@/components/PeriodPicker'
@@ -77,9 +84,14 @@ export function ReportsPage() {
 
           <Card className="flex items-center justify-between bg-ink px-5 py-4">
             <span className="font-semibold text-mint">{t('common.total')}</span>
-            <span className="font-display text-xl font-bold text-white">
-              {formatMinutes(summaries.reduce((a, s) => a + s.workMin + s.travelMin, 0))}
-            </span>
+            <div className="flex items-baseline gap-3">
+              <span className="font-display text-xl font-bold text-white">
+                {formatMinutes(summaries.reduce((a, s) => a + s.workMin + s.travelMin, 0))}
+              </span>
+              <span className="font-display text-xl font-bold text-mint">
+                {formatMoney(summaries.reduce((a, s) => a + s.earnings, 0))}
+              </span>
+            </div>
           </Card>
         </>
       )}
@@ -115,9 +127,14 @@ function WorkerRow({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="font-display text-lg font-bold text-brand-dark">
-            {formatMinutes(summary.workMin + summary.travelMin)}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="font-display text-lg font-bold text-brand-dark">
+              {formatMinutes(summary.workMin + summary.travelMin)}
+            </span>
+            {summary.earnings > 0 && (
+              <span className="text-sm font-semibold text-slate">{formatMoney(summary.earnings)}</span>
+            )}
+          </div>
           <svg
             viewBox="0 0 24 24"
             className={`size-5 text-slate transition-transform ${expanded ? 'rotate-180' : ''}`}
@@ -152,8 +169,11 @@ function WorkerRow({
               </div>
               <div className="ml-3 flex shrink-0 flex-col items-end">
                 <span className="font-display font-bold text-brand-dark">{formatMinutes(workedMinutes(s))}</span>
+                {s.hourlyRate > 0 && (
+                  <span className="text-xs font-semibold text-slate">{formatMoney(shiftEarnings(s))}</span>
+                )}
                 {travelMinutes(s) > 0 && (
-                  <span className="text-xs text-slate">+{formatMinutes(travelMinutes(s))}</span>
+                  <span className="text-xs text-slate">+{formatMinutes(travelMinutes(s))} {t('admin.travelH').toLowerCase()}</span>
                 )}
               </div>
             </button>

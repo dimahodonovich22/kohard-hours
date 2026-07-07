@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context/AuthContext'
 import { closeShift, openShift, watchDayShifts } from '@/lib/shifts'
-import { formatMinutes, workedMinutes, type Shift } from '@/lib/types'
+import {
+  formatMinutes,
+  formatMoney,
+  minutesBetween,
+  shiftEarnings,
+  workedMinutes,
+  type Shift,
+} from '@/lib/types'
 import { nowTime, todayKey } from '@/lib/dates'
 import { Button, Card, Chip, Field, SectionTitle, Spinner, TimeField } from '@/components/ui'
 import { PhotoCapture } from '@/components/PhotoCapture'
@@ -24,6 +31,7 @@ export function TodayPage() {
   const open = useMemo(() => shifts?.find((s) => s.status === 'open') ?? null, [shifts])
   const closed = useMemo(() => shifts?.filter((s) => s.status === 'closed') ?? [], [shifts])
   const totalToday = closed.reduce((acc, s) => acc + workedMinutes(s), 0)
+  const earnedToday = closed.reduce((acc, s) => acc + shiftEarnings(s), 0)
 
   if (!shifts) {
     return (
@@ -69,9 +77,14 @@ export function TodayPage() {
               ))}
               <Card className="flex items-center justify-between px-5 py-4">
                 <span className="font-semibold text-slate">{t('common.total')}</span>
-                <span className="font-display text-xl font-bold text-brand-dark">
-                  {formatMinutes(totalToday)}
-                </span>
+                <div className="flex items-baseline gap-3">
+                  <span className="font-display text-xl font-bold text-brand-dark">
+                    {formatMinutes(totalToday)}
+                  </span>
+                  {earnedToday > 0 && (
+                    <span className="font-display text-xl font-bold text-ink">{formatMoney(earnedToday)}</span>
+                  )}
+                </div>
               </Card>
             </>
           )}
@@ -139,15 +152,21 @@ function ClosedShiftCard({ shift }: { shift: Shift }) {
             {shift.lunchMinutes > 0 && ` · ${t('shift.lunch').toLowerCase()} ${shift.lunchMinutes} ${t('common.minutes')}`}
           </p>
         </div>
-        <span className="font-display text-lg font-bold text-brand-dark">
-          {formatMinutes(workedMinutes(shift))}
-        </span>
+        <div className="flex flex-col items-end">
+          <span className="font-display text-lg font-bold text-brand-dark">
+            {formatMinutes(workedMinutes(shift))}
+          </span>
+          {shift.hourlyRate > 0 && (
+            <span className="text-sm font-semibold text-slate">{formatMoney(shiftEarnings(shift))}</span>
+          )}
+        </div>
       </div>
     </Card>
   )
 }
 
 const LUNCH_PRESETS = [0, 30, 45, 60]
+const RATE_STORAGE_KEY = 'kohard-last-rate'
 
 function ArriveForm({
   userId,
@@ -165,6 +184,8 @@ function ArriveForm({
   const { t } = useTranslation()
   const [objectName, setObjectName] = useState('')
   const [time, setTime] = useState(nowTime())
+  // Ставка по умолчанию — та, что работник вводил в прошлый раз (обычно не меняется)
+  const [rate, setRate] = useState(() => localStorage.getItem(RATE_STORAGE_KEY) ?? '')
   const [photo, setPhoto] = useState<File | null>(null)
   const [withTravel, setWithTravel] = useState(false)
   const [travelStart, setTravelStart] = useState('')
@@ -174,6 +195,8 @@ function ArriveForm({
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (!photo) return setPhotoError(t('shift.photoRequired'))
+    const rateNum = Number(rate.replace(',', '.')) || 0
+    localStorage.setItem(RATE_STORAGE_KEY, rate)
     setBusy(true)
     try {
       await openShift({
@@ -183,6 +206,7 @@ function ArriveForm({
         objectName,
         arrivalTime: time,
         photo,
+        hourlyRate: rateNum,
         travelStartTime: withTravel && travelStart ? travelStart : null,
         travelEndTime: withTravel && travelStart ? time : null,
       })
@@ -205,7 +229,22 @@ function ArriveForm({
           onChange={(e) => setObjectName(e.target.value)}
           required
         />
-        <TimeField label={t('shift.arrivalTime')} value={time} onChange={(e) => setTime(e.target.value)} required />
+        <div className="grid grid-cols-2 gap-3">
+          <TimeField label={t('shift.arrivalTime')} value={time} onChange={(e) => setTime(e.target.value)} required />
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-slate">{t('shift.rate')}</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={0.5}
+              value={rate}
+              onChange={(e) => setRate(e.target.value)}
+              placeholder={t('shift.ratePlaceholder')}
+              className="w-full min-h-14 rounded-2xl border-2 border-mist bg-white px-4 text-center font-display text-xl font-medium text-ink outline-none focus:border-brand placeholder:font-sans placeholder:text-base placeholder:font-normal placeholder:text-slate/50"
+            />
+          </label>
+        </div>
 
         {/* Дорога: выехал из дома → приехал на объект */}
         {withTravel ? (
@@ -373,6 +412,26 @@ function LeaveForm({
           }}
           error={photoError}
         />
+
+        {/* Живой итог: сколько отработал и заработал при выбранном времени */}
+        {(() => {
+          const workedMin = Math.max(0, minutesBetween(shift.arrivalTime, time) - lunch)
+          const earned = Math.round((workedMin / 60) * (shift.hourlyRate || 0) * 100) / 100
+          return (
+            <div className="flex items-stretch gap-3">
+              <div className="flex-1 rounded-2xl bg-mint/60 px-4 py-3 text-center">
+                <p className="text-xs font-semibold uppercase tracking-wider text-brand-deep">{t('shift.work')}</p>
+                <p className="mt-0.5 font-display text-2xl font-bold text-brand-dark">{formatMinutes(workedMin)}</p>
+              </div>
+              {shift.hourlyRate > 0 && (
+                <div className="flex-1 rounded-2xl bg-ink px-4 py-3 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-mint">{t('shift.earned')}</p>
+                  <p className="mt-0.5 font-display text-2xl font-bold text-white">{formatMoney(earned)}</p>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         <div className="mt-1 flex gap-3">
           <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
