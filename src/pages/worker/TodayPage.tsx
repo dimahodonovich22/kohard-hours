@@ -127,10 +127,10 @@ function OpenShiftCard({ shift, onLeave }: { shift: Shift; onLeave: () => void }
         <p className="mb-1 text-sm font-semibold text-slate">{t('shift.onSite')}</p>
         <p className="mb-5 text-balance font-display text-lg font-bold text-ink">{shift.objectName}</p>
         <Button big variant="dark" onClick={onLeave} className="w-full">
-          {t('shift.leave')}
-          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h13M13 6l6 6-6 6" />
+          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 13l4 4L19 7" />
           </svg>
+          {t('shift.leave')}
         </Button>
       </div>
     </Card>

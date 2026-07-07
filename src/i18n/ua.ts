@@ -53,7 +53,7 @@ export default {
     },
     shift: {
       arrive: 'Я приїхав',
-      leave: 'Я їду',
+      leave: 'Закрити зміну',
       arrival: 'Приїзд',
       departure: 'Виїзд',
       objectName: 'Об’єкт (назва або адреса)',
