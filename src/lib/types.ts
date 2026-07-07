@@ -1,0 +1,73 @@
+import type { Timestamp } from 'firebase/firestore'
+
+export type Role = 'worker' | 'admin'
+export type UserStatus = 'pending' | 'active' | 'blocked'
+export type Lang = 'ua' | 'ru'
+
+export interface UserProfile {
+  uid: string
+  name: string
+  email: string
+  phone: string
+  role: Role
+  status: UserStatus
+  language: Lang
+  createdAt: Timestamp | null
+}
+
+export interface AdminEdit {
+  byUid: string
+  byName: string
+  atISO: string
+}
+
+export interface Shift {
+  id: string
+  userId: string
+  userName: string
+  /** YYYY-MM-DD (локальная дата работника) */
+  date: string
+  objectName: string
+  /** HH:mm — время, выбранное работником */
+  arrivalTime: string
+  /** Серверная метка создания записи (антифрод) */
+  arrivalAt: Timestamp | null
+  arrivalPhotoPath: string | null
+  departureTime: string | null
+  departureAt: Timestamp | null
+  departurePhotoPath: string | null
+  lunchMinutes: number
+  travelStartTime: string | null
+  travelEndTime: string | null
+  status: 'open' | 'closed'
+  editedByAdmin: AdminEdit | null
+}
+
+/** Минуты между HH:mm; отрицательное → 0 (защита от опечаток) */
+export function minutesBetween(start: string | null, end: string | null): number {
+  if (!start || !end) return 0
+  const [sh, sm] = start.split(':').map(Number)
+  const [eh, em] = end.split(':').map(Number)
+  const diff = eh * 60 + em - (sh * 60 + sm)
+  return Math.max(0, diff)
+}
+
+export function workedMinutes(s: Shift): number {
+  if (!s.departureTime) return 0
+  return Math.max(0, minutesBetween(s.arrivalTime, s.departureTime) - (s.lunchMinutes || 0))
+}
+
+export function travelMinutes(s: Shift): number {
+  return minutesBetween(s.travelStartTime, s.travelEndTime)
+}
+
+export function formatMinutes(min: number): string {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return `${h}:${String(m).padStart(2, '0')}`
+}
+
+/** Часы с десятичной дробью для Excel, напр. 7.5 */
+export function minutesToDecimal(min: number): number {
+  return Math.round((min / 60) * 100) / 100
+}

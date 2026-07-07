@@ -1,0 +1,78 @@
+# KOHARD Часы — учёт рабочих часов
+
+PWA-приложение учёта рабочих часов для кровельной компании [KOHARD](https://kohard.be) (Бельгия, ~30 работников).
+
+**Работник** (с телефона): отмечает приезд на объект и отъезд с живой фотографией с камеры, указывает обед и дорогу, видит свою историю часов. Интерфейс на украинском и русском.
+
+**Админ (владелец)**: подтверждает регистрации, видит кто сейчас на объектах, смотрит отчёты за неделю/месяц с фотографиями и серверными метками времени (антифрод), исправляет ошибки, выгружает PDF и .xlsx (открывается в Google Таблицах).
+
+## Технологии
+
+React + Vite + TypeScript + Tailwind CSS 4 · Firebase (Auth, Firestore, Storage, Hosting) · vite-plugin-pwa · i18next (ua/ru) · pdfmake · SheetJS
+
+**Надёжность:** Firestore offline persistence (записи сохраняются без сети и синхронизируются сами), очередь фото в IndexedDB с ретраями, серверные метки времени рядом с выбранными, живое фото только с камеры (`capture="environment"`), правки только у админа с пометкой.
+
+## Локальная разработка
+
+Нужны Node 20+ и Java 17+ (для эмуляторов Firestore).
+
+```bash
+npm install
+npm run emulators   # Firebase эмуляторы: Auth 9099, Firestore 8080, Storage 9199, UI 4000
+npm run dev         # Vite dev server: http://localhost:5173
+```
+
+Без файла `.env` приложение автоматически подключается к эмуляторам (проект `demo-kohard`).
+
+**Первый админ:** зарегистрируйтесь в приложении, затем в Emulator UI (http://localhost:4000 → Firestore → `users`) поменяйте у своего документа `role` → `admin` и `status` → `active`.
+
+## Продакшен: подключение реального Firebase
+
+1. [console.firebase.google.com](https://console.firebase.google.com) → создать проект (например `kohard-hours`).
+2. Включить тариф **Blaze** (нужен для Storage; при 30 работниках ≈ 0–5 €/мес).
+3. Включить: **Authentication** → Email/Password; **Firestore Database** (регион `europe-west1`); **Storage** (тот же регион).
+4. Project settings → General → Add app → Web → скопировать конфиг в `.env` (см. `.env.example`).
+5. В `.firebaserc` поставить ID своего проекта.
+6. Задеплоить правила и хостинг:
+   ```bash
+   npx firebase login
+   npx firebase deploy --only firestore:rules,storage,hosting
+   ```
+7. Приложение будет доступно на `https://<project-id>.web.app` — эту ссылку раздаём работникам.
+8. **Первый админ:** зарегистрироваться в приложении, затем в консоли Firebase → Firestore → `users` → свой документ → `role: admin`, `status: active`.
+
+### Автодеплой через GitHub Actions
+
+Workflow `.github/workflows/deploy.yml` деплоит на Firebase Hosting при каждом пуше в `main`. В настройках репозитория (Settings → Secrets → Actions) добавить:
+
+- `VITE_FIREBASE_*` — шесть значений из `.env`;
+- `FIREBASE_SERVICE_ACCOUNT` — JSON сервис-аккаунта (Project settings → Service accounts → Generate new private key).
+
+### Бэкапы (рекомендуется)
+
+Google Cloud Console → Firestore → Backups → включить ежедневный/еженедельный бэкап. Фото в Storage дублировать не обязательно — они уже в GCS с высокой надёжностью.
+
+## Инструкция для работников (раздать вместе со ссылкой)
+
+1. Открыть ссылку на телефоне (Chrome/Safari).
+2. «Реєстрація» → имя, телефон, email, пароль → ждать подтверждения (админа уведомит бейдж в приложении).
+3. Добавить на главный экран: Safari — «Поделиться» → «На экран Домой»; Chrome — меню ⋮ → «Добавить на гл. экран».
+4. Приехал на объект → «Я приїхав» → адрес объекта, время, фото → подтвердить.
+5. Уезжаешь → «Я їду» → время, обед, фото → подтвердить. Дорога — по кнопке «Додати дорогу».
+6. Если нет связи — приложение всё равно всё сохранит и отправит само, когда появится сеть.
+
+## Структура
+
+```
+src/
+  lib/          firebase.ts (инициализация + оффлайн), shifts.ts (смены),
+                uploadQueue.ts (очередь фото IndexedDB), photos.ts (сжатие), types.ts, dates.ts
+  context/      AuthContext.tsx (авторизация + профиль live)
+  i18n/         ua.ts, ru.ts
+  components/   ui.tsx, AppShell.tsx, PhotoCapture.tsx, StoragePhoto.tsx, PeriodPicker.tsx
+  pages/        AuthPage, PendingPage, SettingsPage
+    worker/     TodayPage (приезд/отъезд), HistoryPage
+    admin/      BoardPage, ReportsPage, RequestsPage, WorkersPage, ShiftDetailsModal
+  reports/      data.ts (свод), pdf.ts, xlsx.ts
+firestore.rules storage.rules — правила безопасности
+```

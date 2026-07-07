@@ -1,0 +1,12 @@
+node_modules
+dist
+dev-dist
+.emulator-data
+.env
+.env.local
+*.local
+.DS_Store
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase

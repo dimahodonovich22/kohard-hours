@@ -1,0 +1,76 @@
+@import "tailwindcss";
+@import "./fonts.css";
+
+@theme {
+  /* KOHARD brand — взято с kohard.be */
+  --color-brand: #4cb57a;
+  --color-brand-dark: #13743d;
+  --color-brand-deep: #0d5a2f;
+  --color-ink: #161616;
+  --color-ink-soft: #262626;
+  --color-slate: #5d6773;
+  --color-paper: #f5f3f4;
+  --color-mist: #e9e9e9;
+  --color-mint: #cbecda;
+  --color-peach: #ffbc7d;
+  --color-danger: #d64545;
+
+  --font-display: "Unbounded", "Golos Text", sans-serif;
+  --font-sans: "Golos Text", system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(22 22 22 / 0.06), 0 8px 24px -12px rgb(22 22 22 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(22 22 22 / 0.08), 0 16px 32px -16px rgb(19 116 61 / 0.35);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Диагональный мотив «крыш» KOHARD */
+.roof-stripes {
+  background-image: repeating-linear-gradient(
+    115deg,
+    transparent 0 18px,
+    rgb(76 181 122 / 0.10) 18px 30px
+  );
+}
+
+.roof-stripes-strong {
+  background-image: repeating-linear-gradient(
+    115deg,
+    transparent 0 14px,
+    rgb(255 255 255 / 0.06) 14px 24px
+  );
+}
+
+/* iOS safe areas для standalone PWA */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-rise { animation: rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-rise-1 { animation: rise 0.35s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-rise-2 { animation: rise 0.35s 0.10s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-rise-3 { animation: rise 0.35s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.animate-pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }

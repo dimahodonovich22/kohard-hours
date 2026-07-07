@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return signedIn() && me().role == 'admin' && me().status == 'active';
+    }
+
+    function isActiveWorker() {
+      return signedIn() && me().status == 'active';
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      // Самостоятельная регистрация: только свой документ, только worker/pending
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'worker'
+        && request.resource.data.status == 'pending';
+      // Работник меняет только имя/телефон/язык; роль и статус — только админ
+      allow update: if isAdmin()
+        || (signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['name', 'phone', 'language']));
+      allow delete: if isAdmin();
+    }
+
+    match /shifts/{shiftId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      // Создание: только своя смена, серверная метка приезда обязательна
+      allow create: if isActiveWorker()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.arrivalAt == request.time;
+      // Работник не может подменить владельца и серверные метки времени:
+      // departureAt ставится один раз (только серверным временем), дальше неизменна
+      allow update: if isAdmin()
+        || (isActiveWorker()
+          && resource.data.userId == request.auth.uid
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.arrivalAt == resource.data.arrivalAt
+          && (resource.data.departureAt == null
+              ? (request.resource.data.departureAt == null
+                 || request.resource.data.departureAt == request.time)
+              : request.resource.data.departureAt == resource.data.departureAt));
+      // Удаление — только админ
+      allow delete: if isAdmin();
+    }
+  }
+}

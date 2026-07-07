@@ -1,0 +1,37 @@
+{
+  "name": "kohard-hours",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "emulators": "firebase emulators:start --project demo-kohard --import=./.emulator-data --export-on-exit",
+    "deploy": "npm run build && firebase deploy --only hosting"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "firebase": "^12.9.0",
+    "i18next": "^25.3.2",
+    "idb": "^8.0.3",
+    "pdfmake": "^0.2.20",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-i18next": "^15.6.0",
+    "react-router-dom": "^7.7.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/pdfmake": "^0.2.11",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.7.0",
+    "firebase-tools": "^14.11.1",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.5",
+    "vite-plugin-pwa": "^1.0.1"
+  }
+}
