@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from './context/AuthContext'
 import { FullScreenLoader } from './components/ui'
@@ -16,6 +17,16 @@ import { usePendingRequests } from './pages/admin/usePendingRequests'
 
 export default function App() {
   const { user, profile, loading } = useAuth()
+  const navigate = useNavigate()
+  const prevUid = useRef<string | null>(null)
+
+  // При каждом новом входе открываем первую вкладку («Сьогодні» / «Зараз»),
+  // а не ту, что оставалась в URL от прошлой сессии.
+  useEffect(() => {
+    const uid = user?.uid ?? null
+    if (uid && uid !== prevUid.current) navigate('/', { replace: true })
+    prevUid.current = uid
+  }, [user, navigate])
 
   if (loading) return <FullScreenLoader />
   if (!user) return <AuthPage />
