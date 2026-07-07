@@ -16,6 +16,8 @@ export default {
       today: 'Сегодня',
       hours: 'ч',
       minutes: 'мин',
+      hoursShort: 'ч',
+      minutesShort: 'м',
       total: 'Итого',
       offline: 'Нет связи — данные сохранятся и синхронизируются автоматически',
       photoUploading: 'Фото загружается…',

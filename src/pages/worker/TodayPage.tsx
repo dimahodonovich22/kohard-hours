@@ -2,25 +2,22 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context/AuthContext'
 import { closeShift, openShift, watchDayShifts } from '@/lib/shifts'
-import {
-  formatMinutes,
-  formatMoney,
-  minutesBetween,
-  shiftEarnings,
-  workedMinutes,
-  type Shift,
-} from '@/lib/types'
+import { formatMoney, minutesBetween, shiftEarnings, workedMinutes, type Shift } from '@/lib/types'
+import { useDuration } from '@/lib/useDuration'
 import { nowTime, todayKey } from '@/lib/dates'
 import { Button, Card, Chip, Field, SectionTitle, Spinner, TimeField } from '@/components/ui'
 import { PhotoCapture } from '@/components/PhotoCapture'
+import { ShiftDetailsModal } from '@/pages/admin/ShiftDetailsModal'
 
 type View = 'idle' | 'arrive' | 'leave'
 
 export function TodayPage() {
   const { t } = useTranslation()
+  const fmt = useDuration()
   const { user, profile } = useAuth()
   const [shifts, setShifts] = useState<Shift[] | null>(null)
   const [view, setView] = useState<View>('idle')
+  const [reviewed, setReviewed] = useState<Shift | null>(null)
   const date = todayKey()
 
   useEffect(() => {
@@ -73,14 +70,12 @@ export function TodayPage() {
             <>
               <SectionTitle>{t('shift.workedToday')}</SectionTitle>
               {closed.map((s) => (
-                <ClosedShiftCard key={s.id} shift={s} />
+                <ClosedShiftCard key={s.id} shift={s} onOpen={() => setReviewed(s)} />
               ))}
               <Card className="flex items-center justify-between px-5 py-4">
                 <span className="font-semibold text-slate">{t('common.total')}</span>
                 <div className="flex items-baseline gap-3">
-                  <span className="font-display text-xl font-bold text-brand-dark">
-                    {formatMinutes(totalToday)}
-                  </span>
+                  <span className="font-display text-xl font-bold text-brand-dark">{fmt(totalToday)}</span>
                   {earnedToday > 0 && (
                     <span className="font-display text-xl font-bold text-ink">{formatMoney(earnedToday)}</span>
                   )}
@@ -90,6 +85,8 @@ export function TodayPage() {
           )}
         </>
       )}
+
+      {reviewed && <ShiftDetailsModal shift={reviewed} readOnly onClose={() => setReviewed(null)} />}
     </div>
   )
 }
@@ -140,28 +137,34 @@ function OpenShiftCard({ shift, onLeave }: { shift: Shift; onLeave: () => void }
   )
 }
 
-function ClosedShiftCard({ shift }: { shift: Shift }) {
+function ClosedShiftCard({ shift, onOpen }: { shift: Shift; onOpen: () => void }) {
   const { t } = useTranslation()
+  const fmt = useDuration()
   return (
-    <Card className="animate-rise-2 px-5 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-ink">{shift.objectName}</p>
-          <p className="mt-0.5 text-sm text-slate">
-            {shift.arrivalTime} – {shift.departureTime}
-            {shift.lunchMinutes > 0 && ` · ${t('shift.lunch').toLowerCase()} ${shift.lunchMinutes} ${t('common.minutes')}`}
-          </p>
+    <button type="button" onClick={onOpen} className="w-full text-left">
+      <Card className="animate-rise-2 px-5 py-4 transition-colors active:bg-mint/30">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold text-ink">{shift.objectName}</p>
+            <p className="mt-0.5 text-sm text-slate">
+              {shift.arrivalTime} – {shift.departureTime}
+              {shift.lunchMinutes > 0 && ` · ${t('shift.lunch').toLowerCase()} ${shift.lunchMinutes} ${t('common.minutes')}`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end">
+              <span className="font-display text-lg font-bold text-brand-dark">{fmt(workedMinutes(shift))}</span>
+              {shift.hourlyRate > 0 && (
+                <span className="text-sm font-semibold text-slate">{formatMoney(shiftEarnings(shift))}</span>
+              )}
+            </div>
+            <svg viewBox="0 0 24 24" className="size-5 shrink-0 text-slate/60" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
         </div>
-        <div className="flex flex-col items-end">
-          <span className="font-display text-lg font-bold text-brand-dark">
-            {formatMinutes(workedMinutes(shift))}
-          </span>
-          {shift.hourlyRate > 0 && (
-            <span className="text-sm font-semibold text-slate">{formatMoney(shiftEarnings(shift))}</span>
-          )}
-        </div>
-      </div>
-    </Card>
+      </Card>
+    </button>
   )
 }
 
@@ -302,6 +305,7 @@ function LeaveForm({
   onCancel: () => void
 }) {
   const { t } = useTranslation()
+  const fmt = useDuration()
   const [time, setTime] = useState(nowTime())
   const [photo, setPhoto] = useState<File | null>(null)
   const [lunch, setLunch] = useState(30)
@@ -421,7 +425,7 @@ function LeaveForm({
             <div className="flex items-stretch gap-3">
               <div className="flex-1 rounded-2xl bg-mint/60 px-4 py-3 text-center">
                 <p className="text-xs font-semibold uppercase tracking-wider text-brand-deep">{t('shift.work')}</p>
-                <p className="mt-0.5 font-display text-2xl font-bold text-brand-dark">{formatMinutes(workedMin)}</p>
+                <p className="mt-0.5 font-display text-2xl font-bold text-brand-dark">{fmt(workedMin)}</p>
               </div>
               {shift.hourlyRate > 0 && (
                 <div className="flex-1 rounded-2xl bg-ink px-4 py-3 text-center">

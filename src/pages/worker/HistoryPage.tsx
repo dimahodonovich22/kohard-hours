@@ -2,20 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context/AuthContext'
 import { watchUserShifts } from '@/lib/shifts'
-import {
-  formatMinutes,
-  formatMoney,
-  shiftEarnings,
-  travelMinutes,
-  workedMinutes,
-  type Shift,
-} from '@/lib/types'
+import { formatMoney, shiftEarnings, travelMinutes, workedMinutes, type Shift } from '@/lib/types'
+import { useDuration } from '@/lib/useDuration'
 import { humanDate } from '@/lib/dates'
 import { Card, Chip, EmptyState, SectionTitle, Spinner } from '@/components/ui'
 import { PeriodPicker, usePeriod } from '@/components/PeriodPicker'
 
 export function HistoryPage() {
   const { t } = useTranslation()
+  const fmt = useDuration()
   const { user } = useAuth()
   const period = usePeriod()
   const [shifts, setShifts] = useState<Shift[] | null>(null)
@@ -64,11 +59,11 @@ export function HistoryPage() {
           <Card className="animate-rise flex divide-x divide-mist">
             <div className="flex-1 px-3 py-4 text-center">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate">{t('history.worked')}</p>
-              <p className="mt-1 font-display text-xl font-bold text-brand-dark">{formatMinutes(totals.work)}</p>
+              <p className="mt-1 font-display text-xl font-bold text-brand-dark">{fmt(totals.work)}</p>
             </div>
             <div className="flex-1 px-3 py-4 text-center">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate">{t('history.travel')}</p>
-              <p className="mt-1 font-display text-xl font-bold text-ink">{formatMinutes(totals.travel)}</p>
+              <p className="mt-1 font-display text-xl font-bold text-ink">{fmt(totals.travel)}</p>
             </div>
             {totals.earned > 0 && (
               <div className="flex-1 px-3 py-4 text-center">
@@ -84,7 +79,7 @@ export function HistoryPage() {
               <div className="flex items-center justify-between border-b border-mist px-5 py-2.5">
                 <span className="font-semibold text-slate">{humanDate(date, dayNames)}</span>
                 <span className="font-display font-bold text-brand-dark">
-                  {formatMinutes(items.reduce((a, s) => a + workedMinutes(s), 0))}
+                  {fmt(items.reduce((a, s) => a + workedMinutes(s), 0))}
                 </span>
               </div>
               {items.map((s) => (
@@ -96,7 +91,7 @@ export function HistoryPage() {
                   <p className="mt-0.5 text-sm text-slate">
                     {s.arrivalTime} – {s.departureTime ?? '…'}
                     {s.lunchMinutes > 0 && ` · ${t('history.lunch').toLowerCase()} ${s.lunchMinutes} ${t('common.minutes')}`}
-                    {travelMinutes(s) > 0 && ` · ${t('history.travel').toLowerCase()} ${formatMinutes(travelMinutes(s))}`}
+                    {travelMinutes(s) > 0 && ` · ${t('history.travel').toLowerCase()} ${fmt(travelMinutes(s))}`}
                   </p>
                   {s.editedByAdmin && (
                     <p className="mt-1 text-xs font-medium text-peach">⚠ {t('shift.editedByAdmin')}</p>

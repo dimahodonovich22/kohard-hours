@@ -69,6 +69,18 @@ export function formatMinutes(min: number): string {
   return `${h}:${String(m).padStart(2, '0')}`
 }
 
+/**
+ * Длительность в виде «8 ч 50 м» / «8 г 50 хв» — чтобы не путать с временем
+ * на циферблате. Подписи часов/минут передаются из перевода.
+ */
+export function formatDuration(min: number, hLabel: string, mLabel: string): string {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  if (h > 0 && m > 0) return `${h} ${hLabel} ${m} ${mLabel}`
+  if (h > 0) return `${h} ${hLabel}`
+  return `${m} ${mLabel}`
+}
+
 /** Часы с десятичной дробью для Excel, напр. 7.5 */
 export function minutesToDecimal(min: number): number {
   return Math.round((min / 60) * 100) / 100

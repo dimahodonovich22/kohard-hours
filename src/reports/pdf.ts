@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next'
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces'
-import { formatMinutes, formatMoney, shiftEarnings, travelMinutes, workedMinutes, type WorkerSummary } from './data'
+import { formatDuration, formatMoney, shiftEarnings, travelMinutes, workedMinutes, type WorkerSummary } from './data'
 
 const BRAND_DARK = '#13743D'
 const INK = '#161616'
@@ -55,6 +55,7 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
   const logo = await getLogo()
 
   const sum = (fn: (s: WorkerSummary) => number) => summaries.reduce((a, s) => a + fn(s), 0)
+  const fmt = (min: number) => formatDuration(min, t('common.hoursShort'), t('common.minutesShort'))
 
   const summaryBody: TableCell[][] = [
     [
@@ -69,19 +70,19 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
     ...summaries.map((s) => [
       td(s.userName),
       td(String(s.days), { center: true }),
-      td(formatMinutes(s.workMin), { center: true }),
-      td(formatMinutes(s.travelMin), { center: true }),
-      td(formatMinutes(s.lunchMin), { center: true }),
-      td(formatMinutes(s.workMin + s.travelMin), { center: true, bold: true }),
+      td(fmt(s.workMin), { center: true }),
+      td(fmt(s.travelMin), { center: true }),
+      td(fmt(s.lunchMin), { center: true }),
+      td(fmt(s.workMin + s.travelMin), { center: true, bold: true }),
       td(formatMoney(s.earnings), { center: true, bold: true }),
     ]),
     [
       td(t('common.total'), { bold: true }),
       td(''),
-      td(formatMinutes(sum((s) => s.workMin)), { center: true, bold: true }),
-      td(formatMinutes(sum((s) => s.travelMin)), { center: true, bold: true }),
-      td(formatMinutes(sum((s) => s.lunchMin)), { center: true, bold: true }),
-      td(formatMinutes(sum((s) => s.workMin + s.travelMin)), { center: true, bold: true }),
+      td(fmt(sum((s) => s.workMin)), { center: true, bold: true }),
+      td(fmt(sum((s) => s.travelMin)), { center: true, bold: true }),
+      td(fmt(sum((s) => s.lunchMin)), { center: true, bold: true }),
+      td(fmt(sum((s) => s.workMin + s.travelMin)), { center: true, bold: true }),
       td(formatMoney(sum((s) => s.earnings)), { center: true, bold: true }),
     ],
   ]
@@ -110,8 +111,8 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
             td(s.arrivalTime, { center: true }),
             td(s.departureTime ?? '—', { center: true }),
             td(s.lunchMinutes ? String(s.lunchMinutes) : '—', { center: true }),
-            td(travelMinutes(s) ? formatMinutes(travelMinutes(s)) : '—', { center: true }),
-            td(formatMinutes(workedMinutes(s)), { center: true, bold: true }),
+            td(travelMinutes(s) ? fmt(travelMinutes(s)) : '—', { center: true }),
+            td(fmt(workedMinutes(s)), { center: true, bold: true }),
             td(s.hourlyRate ? formatMoney(s.hourlyRate) : '—', { center: true }),
             td(formatMoney(shiftEarnings(s)), { center: true, bold: true }),
           ]),

@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { watchAllShifts } from '@/lib/shifts'
-import {
-  formatMinutes,
-  formatMoney,
-  shiftEarnings,
-  travelMinutes,
-  workedMinutes,
-  type Shift,
-} from '@/lib/types'
+import { formatMoney, shiftEarnings, travelMinutes, workedMinutes, type Shift } from '@/lib/types'
+import { useDuration } from '@/lib/useDuration'
 import { humanDate } from '@/lib/dates'
 import { Button, Card, EmptyState, SectionTitle, Spinner } from '@/components/ui'
 import { PeriodPicker, usePeriod } from '@/components/PeriodPicker'
@@ -17,6 +11,7 @@ import { ShiftDetailsModal } from './ShiftDetailsModal'
 
 export function ReportsPage() {
   const { t } = useTranslation()
+  const fmt = useDuration()
   const period = usePeriod()
   const [shifts, setShifts] = useState<Shift[] | null>(null)
   const [openWorker, setOpenWorker] = useState<string | null>(null)
@@ -86,7 +81,7 @@ export function ReportsPage() {
             <span className="font-semibold text-mint">{t('common.total')}</span>
             <div className="flex items-baseline gap-3">
               <span className="font-display text-xl font-bold text-white">
-                {formatMinutes(summaries.reduce((a, s) => a + s.workMin + s.travelMin, 0))}
+                {fmt(summaries.reduce((a, s) => a + s.workMin + s.travelMin, 0))}
               </span>
               <span className="font-display text-xl font-bold text-mint">
                 {formatMoney(summaries.reduce((a, s) => a + s.earnings, 0))}
@@ -115,6 +110,7 @@ function WorkerRow({
   dayNames: Record<string, string>
 }) {
   const { t } = useTranslation()
+  const fmt = useDuration()
   return (
     <Card className="animate-rise overflow-hidden">
       <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-5 py-4 text-left">
@@ -122,14 +118,14 @@ function WorkerRow({
           <p className="font-display font-bold text-ink">{summary.userName}</p>
           <p className="mt-0.5 text-sm text-slate">
             {summary.days} {t('admin.days').toLowerCase()} · {t('admin.workH').toLowerCase()}{' '}
-            {formatMinutes(summary.workMin)}
-            {summary.travelMin > 0 && ` · ${t('admin.travelH').toLowerCase()} ${formatMinutes(summary.travelMin)}`}
+            {fmt(summary.workMin)}
+            {summary.travelMin > 0 && ` · ${t('admin.travelH').toLowerCase()} ${fmt(summary.travelMin)}`}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end">
             <span className="font-display text-lg font-bold text-brand-dark">
-              {formatMinutes(summary.workMin + summary.travelMin)}
+              {fmt(summary.workMin + summary.travelMin)}
             </span>
             {summary.earnings > 0 && (
               <span className="text-sm font-semibold text-slate">{formatMoney(summary.earnings)}</span>
@@ -168,12 +164,12 @@ function WorkerRow({
                 </p>
               </div>
               <div className="ml-3 flex shrink-0 flex-col items-end">
-                <span className="font-display font-bold text-brand-dark">{formatMinutes(workedMinutes(s))}</span>
+                <span className="font-display font-bold text-brand-dark">{fmt(workedMinutes(s))}</span>
                 {s.hourlyRate > 0 && (
                   <span className="text-xs font-semibold text-slate">{formatMoney(shiftEarnings(s))}</span>
                 )}
                 {travelMinutes(s) > 0 && (
-                  <span className="text-xs text-slate">+{formatMinutes(travelMinutes(s))} {t('admin.travelH').toLowerCase()}</span>
+                  <span className="text-xs text-slate">+{fmt(travelMinutes(s))} {t('admin.travelH').toLowerCase()}</span>
                 )}
               </div>
             </button>

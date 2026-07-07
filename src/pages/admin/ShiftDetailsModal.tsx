@@ -2,19 +2,23 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context/AuthContext'
 import { adminDeleteShift, adminUpdateShift } from '@/lib/shifts'
-import {
-  formatMinutes,
-  formatMoney,
-  shiftEarnings,
-  travelMinutes,
-  workedMinutes,
-  type Shift,
-} from '@/lib/types'
+import { formatMoney, shiftEarnings, travelMinutes, workedMinutes, type Shift } from '@/lib/types'
+import { useDuration } from '@/lib/useDuration'
 import { Button, Card, Chip, Field, TimeField } from '@/components/ui'
 import { StoragePhoto } from '@/components/StoragePhoto'
 
-export function ShiftDetailsModal({ shift, onClose }: { shift: Shift; onClose: () => void }) {
+export function ShiftDetailsModal({
+  shift,
+  onClose,
+  readOnly = false,
+}: {
+  shift: Shift
+  onClose: () => void
+  /** Просмотр без редактирования — для работника в разделе «Сегодня»/«История» */
+  readOnly?: boolean
+}) {
   const { t } = useTranslation()
+  const fmt = useDuration()
   const { user, profile } = useAuth()
   const [editing, setEditing] = useState(false)
   const [objectName, setObjectName] = useState(shift.objectName)
@@ -92,7 +96,7 @@ export function ShiftDetailsModal({ shift, onClose }: { shift: Shift; onClose: (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {shift.status === 'closed' && (
                     <Chip tone="mint">
-                      {t('shift.work')}: {formatMinutes(workedMinutes(shift))}
+                      {t('shift.work')}: {fmt(workedMinutes(shift))}
                     </Chip>
                   )}
                   {shift.hourlyRate > 0 && (
@@ -112,7 +116,7 @@ export function ShiftDetailsModal({ shift, onClose }: { shift: Shift; onClose: (
                   )}
                   {travelMinutes(shift) > 0 && (
                     <Chip tone="peach">
-                      {t('shift.travel')}: {formatMinutes(travelMinutes(shift))}
+                      {t('shift.travel')}: {fmt(travelMinutes(shift))}
                     </Chip>
                   )}
                 </div>
@@ -152,14 +156,16 @@ export function ShiftDetailsModal({ shift, onClose }: { shift: Shift; onClose: (
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <Button variant="danger" onClick={() => void remove()} className="flex-1">
-                  {t('admin.deleteShift')}
-                </Button>
-                <Button variant="secondary" onClick={() => setEditing(true)} className="flex-[2]">
-                  {t('admin.editShift')}
-                </Button>
-              </div>
+              {!readOnly && (
+                <div className="flex gap-3">
+                  <Button variant="danger" onClick={() => void remove()} className="flex-1">
+                    {t('admin.deleteShift')}
+                  </Button>
+                  <Button variant="secondary" onClick={() => setEditing(true)} className="flex-[2]">
+                    {t('admin.editShift')}
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <>

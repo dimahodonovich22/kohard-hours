@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { watchAllShifts } from '@/lib/shifts'
-import { formatMinutes, workedMinutes, type Shift } from '@/lib/types'
+import { workedMinutes, type Shift } from '@/lib/types'
+import { useDuration } from '@/lib/useDuration'
 import { todayKey } from '@/lib/dates'
 import { Card, Chip, EmptyState, SectionTitle, Spinner } from '@/components/ui'
 import { StoragePhoto } from '@/components/StoragePhoto'
@@ -10,6 +11,7 @@ import { ShiftDetailsModal } from './ShiftDetailsModal'
 /** «Кто сейчас на объектах» — живой снимок дня */
 export function BoardPage() {
   const { t } = useTranslation()
+  const fmt = useDuration()
   const [shifts, setShifts] = useState<Shift[] | null>(null)
   const [selected, setSelected] = useState<Shift | null>(null)
   const date = todayKey()
@@ -63,7 +65,7 @@ export function BoardPage() {
                     {s.objectName} · {s.arrivalTime}–{s.departureTime}
                   </p>
                 </div>
-                <span className="font-display font-bold text-brand-dark">{formatMinutes(workedMinutes(s))}</span>
+                <span className="font-display font-bold text-brand-dark">{fmt(workedMinutes(s))}</span>
               </Card>
             </button>
           ))}

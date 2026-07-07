@@ -1,5 +1,5 @@
 import {
-  formatMinutes,
+  formatDuration,
   formatMoney,
   minutesToDecimal,
   shiftEarnings,
@@ -43,4 +43,4 @@ export function summarize(shifts: Shift[]): WorkerSummary[] {
   return [...map.values()].sort((a, b) => a.userName.localeCompare(b.userName))
 }
 
-export { formatMinutes, formatMoney, minutesToDecimal, shiftEarnings, travelMinutes, workedMinutes }
+export { formatDuration, formatMoney, minutesToDecimal, shiftEarnings, travelMinutes, workedMinutes }
