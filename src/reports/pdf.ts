@@ -41,16 +41,35 @@ async function getLogo(): Promise<string | null> {
   }
 }
 
+interface PdfMakeLike {
+  vfs?: Record<string, string>
+  addVirtualFileSystem?: (vfs: Record<string, string>) => void
+  createPdf: (doc: TDocumentDefinitions) => { download: (name: string) => void }
+}
+
 /** PDF-отчёт с логотипом KOHARD (Roboto в pdfmake поддерживает кириллицу) */
 export async function exportPdf(summaries: WorkerSummary[], period: string, t: TFunction): Promise<void> {
   // pdfmake подтягиваем лениво — это тяжёлая библиотека, работникам она не нужна
-  const [{ default: pdfMake }, pdfFonts] = await Promise.all([
+  const [pdfMakeMod, vfsMod] = await Promise.all([
     import('pdfmake/build/pdfmake'),
     import('pdfmake/build/vfs_fonts'),
   ])
-  const fontsModule = pdfFonts as unknown as { pdfMake?: { vfs: Record<string, string> }; vfs?: Record<string, string> }
-  ;(pdfMake as unknown as { vfs: Record<string, string> }).vfs =
-    fontsModule.pdfMake?.vfs ?? fontsModule.vfs ?? {}
+  const pdfMake = ((pdfMakeMod as { default?: PdfMakeLike }).default ??
+    (pdfMakeMod as unknown as PdfMakeLike)) as PdfMakeLike
+
+  // В pdfmake 0.2.x vfs_fonts экспортирует карту { 'Roboto-Regular.ttf': base64, ... }
+  // как default. Раньше она лежала в .pdfMake.vfs — поддержим оба варианта.
+  const mod = vfsMod as unknown as {
+    default?: Record<string, string>
+    vfs?: Record<string, string>
+    pdfMake?: { vfs: Record<string, string> }
+  }
+  const vfs = mod.default ?? mod.vfs ?? mod.pdfMake?.vfs ?? (vfsMod as unknown as Record<string, string>)
+  if (typeof pdfMake.addVirtualFileSystem === 'function') {
+    pdfMake.addVirtualFileSystem(vfs)
+  } else {
+    pdfMake.vfs = vfs
+  }
 
   const logo = await getLogo()
 
