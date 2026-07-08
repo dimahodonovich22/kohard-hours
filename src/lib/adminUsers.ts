@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth'
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db, firebaseConfig, useEmulators } from './firebase'
+import { demoDb, isDemo } from './demo'
 import type { Lang } from './types'
 
 let counter = 0
@@ -27,6 +28,10 @@ export async function adminCreateWorker(opts: {
   password: string
   language: Lang
 }): Promise<void> {
+  if (isDemo) {
+    await demoDb.createWorker(opts)
+    return
+  }
   const secondary = initializeApp(firebaseConfig, `admin-create-${Date.now()}-${counter++}`)
   const secondaryAuth = getAuth(secondary)
   if (useEmulators) {

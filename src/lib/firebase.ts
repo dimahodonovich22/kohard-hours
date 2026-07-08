@@ -7,6 +7,7 @@ import {
   persistentMultipleTabManager,
 } from 'firebase/firestore'
 import { connectStorageEmulator, getStorage } from 'firebase/storage'
+import { isDemo } from './demo'
 
 // Продакшен-конфиг подставляется через .env (см. README).
 // Без .env приложение работает с локальными эмуляторами (demo-kohard).
@@ -34,7 +35,8 @@ export const db = initializeFirestore(app, {
 
 export const storage = getStorage(app)
 
-if (useEmulators) {
+// В демо-режиме Firebase не используется вовсе — эмуляторы не подключаем
+if (useEmulators && !isDemo) {
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
   connectFirestoreEmulator(db, '127.0.0.1', 8080)
   connectStorageEmulator(storage, '127.0.0.1', 9199)

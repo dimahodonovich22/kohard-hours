@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { doc, updateDoc } from 'firebase/firestore'
 import { FirebaseError } from 'firebase/app'
 import { db } from '@/lib/firebase'
+import { demoDb, isDemo } from '@/lib/demo'
 import { adminCreateWorker } from '@/lib/adminUsers'
 import { Button, Card, Chip, Field, Spinner } from '@/components/ui'
 import { useAllUsers } from './usePendingRequests'
@@ -23,9 +24,9 @@ export function WorkersPage() {
   }
 
   async function toggleBlock(u: UserProfile) {
-    await updateDoc(doc(db, 'users', u.uid), {
-      status: u.status === 'blocked' ? 'active' : 'blocked',
-    })
+    const status = u.status === 'blocked' ? 'active' : 'blocked'
+    if (isDemo) return void demoDb.updateUser(u.uid, { status })
+    await updateDoc(doc(db, 'users', u.uid), { status })
   }
 
   return (

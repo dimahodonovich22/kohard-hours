@@ -3,6 +3,7 @@ import { getDownloadURL, ref } from 'firebase/storage'
 import { useTranslation } from 'react-i18next'
 import { storage } from '@/lib/firebase'
 import { isPending, onQueueChange } from '@/lib/uploadQueue'
+import { demoPhotoUrl, isDemo } from '@/lib/demo'
 
 /**
  * Фото из Firebase Storage по пути. Если фото ещё в локальной очереди
@@ -15,7 +16,7 @@ export function StoragePhoto({ path, className = '' }: { path: string | null; cl
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    if (!path) return
+    if (isDemo || !path) return
     let alive = true
 
     async function resolve() {
@@ -42,6 +43,17 @@ export function StoragePhoto({ path, className = '' }: { path: string | null; cl
       unsub()
     }
   }, [path])
+
+  if (isDemo) {
+    if (!path) {
+      return (
+        <div className={`flex items-center justify-center bg-mist text-sm text-slate ${className}`}>
+          {t('admin.noPhoto')}
+        </div>
+      )
+    }
+    return <img src={demoPhotoUrl(path)} alt="" className={`object-cover ${className}`} loading="lazy" />
+  }
 
   if (!path) {
     return (

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FirebaseError } from 'firebase/app'
 import { useAuth } from '@/context/AuthContext'
+import { demoAuth, isDemo } from '@/lib/demo'
 import { Button, Card, Field, Spinner } from '@/components/ui'
 import { LangSwitch } from '@/components/LangSwitch'
 
@@ -70,7 +71,7 @@ export function AuthPage() {
     <div className="flex min-h-dvh flex-col bg-ink">
       {/* Фирменная тёмная зона с логотипом */}
       <div className="roof-stripes-strong flex flex-col items-center gap-3 px-6 pb-10 pt-safe">
-        <img src="/logo.png" alt="KOHARD" className="mt-12 h-12 w-auto animate-rise" />
+        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KOHARD" className="mt-12 h-12 w-auto animate-rise" />
         <p className="animate-rise-1 font-display text-xs font-medium uppercase tracking-[0.22em] text-mint">
           {t('app.tagline')}
         </p>
@@ -81,6 +82,22 @@ export function AuthPage() {
           <div className="mb-5 flex justify-center">
             <LangSwitch />
           </div>
+
+          {isDemo && (
+            <Card className="mb-5 animate-rise-1 border-2 border-dashed border-brand/40 p-4">
+              <p className="mb-3 text-center text-sm font-semibold text-brand-dark">
+                DEMO — {t('auth.login')}:
+              </p>
+              <div className="flex flex-col gap-2.5">
+                <Button onClick={() => demoAuth.loginAs(demoAuth.quickLogins.admin)} className="w-full">
+                  👑 {t('auth.demoOwner')}
+                </Button>
+                <Button variant="secondary" onClick={() => demoAuth.loginAs(demoAuth.quickLogins.ivan)} className="w-full">
+                  👷 {t('auth.demoWorker')}
+                </Button>
+              </div>
+            </Card>
+          )}
 
           <Card className="animate-rise-2 p-5">
             <h1 className="mb-4 font-display text-lg font-bold text-ink">

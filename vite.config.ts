@@ -4,11 +4,23 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath } from 'node:url'
 
-export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-    VitePWA({
+// mode === 'demo' → сборка для GitHub Pages: базовый путь /kohard-hours/, без PWA
+export default defineConfig(({ mode }) => {
+  const demo = mode === 'demo'
+  return {
+    base: demo ? '/kohard-hours/' : '/',
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    },
+    plugins: [
+      react(),
+      tailwindcss(),
+      ...(demo
+        ? []
+        : [
+            VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'favicon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'],
       manifest: {
@@ -33,12 +45,9 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // Firestore/Storage/Auth ходят своими SDK — SW их не трогает
         navigateFallbackDenylist: [/^\/__/],
-      },
-    }),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
-  },
+              },
+            }),
+          ]),
+    ],
+  }
 })

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { deleteDoc, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { demoDb, isDemo } from '@/lib/demo'
 import { Button, Card, EmptyState } from '@/components/ui'
 import { usePendingRequests } from './usePendingRequests'
 import type { UserProfile } from '@/lib/types'
@@ -10,11 +11,13 @@ export function RequestsPage() {
   const pending = usePendingRequests()
 
   async function approve(u: UserProfile) {
+    if (isDemo) return void demoDb.updateUser(u.uid, { status: 'active' })
     await updateDoc(doc(db, 'users', u.uid), { status: 'active' })
   }
 
   async function reject(u: UserProfile) {
     if (!confirm(t('admin.rejectConfirm', { name: u.name }))) return
+    if (isDemo) return void demoDb.deleteUser(u.uid)
     await deleteDoc(doc(db, 'users', u.uid))
   }
 

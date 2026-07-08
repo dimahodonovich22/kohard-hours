@@ -1,8 +1,9 @@
 name: Deploy to Firebase Hosting
 
+# Боевой деплой на Firebase — запускается вручную (когда настроите Firebase-проект
+# и добавите секреты). Пока демо публикуется через pages.yml на GitHub Pages.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:

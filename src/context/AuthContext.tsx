@@ -16,6 +16,7 @@ import {
 } from 'firebase/auth'
 import { doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
+import { demoAuth, isDemo } from '@/lib/demo'
 import i18n, { setLang, type Lang } from '@/i18n'
 import type { UserProfile } from '@/lib/types'
 
@@ -34,6 +35,41 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  if (isDemo) return <DemoAuthProvider>{children}</DemoAuthProvider>
+  return <FirebaseAuthProvider>{children}</FirebaseAuthProvider>
+}
+
+/** Демо-режим (GitHub Pages): авторизация и профиль из памяти, без Firebase */
+function DemoAuthProvider({ children }: { children: ReactNode }) {
+  const [, force] = useState(0)
+  useEffect(() => demoAuth.sub(() => force((n) => n + 1)), [])
+
+  const uid = demoAuth.currentUid()
+  const profile = demoAuth.profile()
+  if (profile && profile.language && profile.language !== i18n.language) setLang(profile.language)
+
+  return (
+    <Ctx.Provider
+      value={{
+        user: uid ? ({ uid } as unknown as User) : null,
+        profile,
+        loading: false,
+        register: async (name, email, phone) => demoAuth.register(name, email, phone, (i18n.language as Lang) || 'ua'),
+        login: async (email) => demoAuth.login(email),
+        logout: async () => demoAuth.logout(),
+        resetPassword: async () => {},
+        changeLanguage: (lang) => {
+          setLang(lang)
+          demoAuth.updateLanguage(lang)
+        },
+      }}
+    >
+      {children}
+    </Ctx.Provider>
+  )
+}
+
+function FirebaseAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [authReady, setAuthReady] = useState(false)

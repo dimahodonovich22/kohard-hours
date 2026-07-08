@@ -13,6 +13,7 @@ import {
 import { db } from './firebase'
 import { compressPhoto } from './photos'
 import { enqueuePhoto } from './uploadQueue'
+import { demoDb, isDemo } from './demo'
 import type { AdminEdit, Shift } from './types'
 
 const shiftsCol = collection(db, 'shifts')
@@ -38,6 +39,7 @@ export async function openShift(opts: {
   travelStartTime?: string | null
   travelEndTime?: string | null
 }): Promise<string> {
+  if (isDemo) return demoDb.openShift(opts)
   const refDoc = doc(shiftsCol)
   const photoPath = `photos/${opts.userId}/${refDoc.id}/arrival.jpg`
 
@@ -78,6 +80,7 @@ export async function closeShift(opts: {
   travelStartTime?: string | null
   travelEndTime?: string | null
 }): Promise<void> {
+  if (isDemo) return demoDb.closeShift(opts)
   const photoPath = `photos/${opts.userId}/${opts.shiftId}/departure.jpg`
   const compressed = await compressPhoto(opts.photo)
   await enqueuePhoto(photoPath, compressed)
@@ -102,10 +105,12 @@ export function adminUpdateShift(
   fields: Partial<Omit<Shift, 'id'>>,
   editor?: AdminEdit,
 ): Promise<void> {
+  if (isDemo) return demoDb.adminUpdate(shiftId, fields, editor)
   return updateDoc(doc(shiftsCol, shiftId), editor ? { ...fields, editedByAdmin: editor } : fields)
 }
 
 export function adminDeleteShift(shiftId: string): Promise<void> {
+  if (isDemo) return demoDb.adminDelete(shiftId)
   return deleteDoc(doc(shiftsCol, shiftId))
 }
 
@@ -115,6 +120,7 @@ export function watchDayShifts(
   date: string,
   cb: (shifts: Shift[]) => void,
 ): () => void {
+  if (isDemo) return demoDb.watchDay(userId, date, cb)
   const q = query(shiftsCol, where('userId', '==', userId), where('date', '==', date))
   return onSnapshot(q, { includeMetadataChanges: true }, (snap) => {
     const items = snap.docs.map((d) => snapToShift(d.id, d.data()))
@@ -130,6 +136,7 @@ export function watchUserShifts(
   end: string,
   cb: (shifts: Shift[]) => void,
 ): () => void {
+  if (isDemo) return demoDb.watchUser(userId, start, end, cb)
   const q = query(
     shiftsCol,
     where('userId', '==', userId),
@@ -146,6 +153,7 @@ export function watchAllShifts(
   end: string,
   cb: (shifts: Shift[]) => void,
 ): () => void {
+  if (isDemo) return demoDb.watchAll(start, end, cb)
   const q = query(shiftsCol, where('date', '>=', start), where('date', '<=', end))
   return onSnapshot(q, (snap) => cb(snap.docs.map((d) => snapToShift(d.id, d.data()))))
 }

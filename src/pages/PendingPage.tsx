@@ -11,7 +11,7 @@ export function PendingPage() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-ink px-6 pt-safe pb-safe">
-      <img src="/logo.png" alt="KOHARD" className="h-10 w-auto" />
+      <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KOHARD" className="h-10 w-auto" />
       <Card className="w-full max-w-md animate-rise p-6 text-center">
         <div
           className={`mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl ${

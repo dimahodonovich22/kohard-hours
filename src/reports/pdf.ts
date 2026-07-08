@@ -28,7 +28,7 @@ let logoDataUrl: string | null = null
 async function getLogo(): Promise<string | null> {
   if (logoDataUrl) return logoDataUrl
   try {
-    const blob = await (await fetch('/logo.png')).blob()
+    const blob = await (await fetch(`${import.meta.env.BASE_URL}logo.png`)).blob()
     logoDataUrl = await new Promise<string>((resolve, reject) => {
       const fr = new FileReader()
       fr.onload = () => resolve(fr.result as string)

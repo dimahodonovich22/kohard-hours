@@ -45,7 +45,7 @@ export function AppShell({ nav, children }: { nav: NavItem[]; children: ReactNod
       {/* Тёмная шапка KOHARD с мотивом крыш */}
       <header className="roof-stripes-strong sticky top-0 z-20 bg-ink pt-safe">
         <div className="mx-auto flex h-14 w-full max-w-2xl items-center justify-between px-4">
-          <img src="/logo.png" alt="KOHARD" className="h-7 w-auto" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KOHARD" className="h-7 w-auto" />
           <div className="flex items-center gap-2">
             {queue > 0 && (
               <span className="flex items-center gap-1.5 rounded-full bg-peach/20 px-2.5 py-1 text-xs font-semibold text-peach">
