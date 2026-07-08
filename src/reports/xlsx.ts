@@ -59,18 +59,21 @@ export function exportXlsx(summaries: WorkerSummary[], period: string, t: TFunct
       t('report.earned'),
     ],
     ...summaries.flatMap((sum) =>
-      sum.shifts.map((s) => [
-        s.userName,
-        s.date,
-        s.objectName,
-        s.arrivalTime,
-        s.departureTime ?? '',
-        s.lunchMinutes || 0,
-        minutesToDecimal(travelMinutes(s)),
-        minutesToDecimal(workedMinutes(s)),
-        money(s.hourlyRate || 0),
-        money(shiftEarnings(s)),
-      ]),
+      sum.shifts.map((s) => {
+        const isProj = s.workType === 'project'
+        return [
+          s.userName,
+          s.date,
+          isProj ? `${s.objectName} (${t('shift.project')})` : s.objectName,
+          s.arrivalTime,
+          s.departureTime ?? '',
+          isProj ? 0 : s.lunchMinutes || 0,
+          minutesToDecimal(travelMinutes(s)),
+          isProj ? 0 : minutesToDecimal(workedMinutes(s)),
+          isProj ? 0 : money(s.hourlyRate || 0),
+          money(shiftEarnings(s)),
+        ]
+      }),
     ),
   ]
   const wsDetails = XLSX.utils.aoa_to_sheet(detailRows)

@@ -20,12 +20,14 @@ export function ShiftDetailsModal({
   const { t } = useTranslation()
   const fmt = useDuration()
   const { user, profile } = useAuth()
+  const isProject = shift.workType === 'project'
   const [editing, setEditing] = useState(false)
   const [objectName, setObjectName] = useState(shift.objectName)
   const [arrivalTime, setArrivalTime] = useState(shift.arrivalTime)
   const [departureTime, setDepartureTime] = useState(shift.departureTime ?? '')
   const [lunch, setLunch] = useState(shift.lunchMinutes)
   const [rate, setRate] = useState(String(shift.hourlyRate ?? 0))
+  const [amount, setAmount] = useState(shift.projectAmount != null ? String(shift.projectAmount) : '')
   const [travelStart, setTravelStart] = useState(shift.travelStartTime ?? '')
   const [travelEnd, setTravelEnd] = useState(shift.travelEndTime ?? '')
   const [busy, setBusy] = useState(false)
@@ -36,20 +38,32 @@ export function ShiftDetailsModal({
   async function save() {
     setBusy(true)
     try {
-      await adminUpdateShift(
-        shift.id,
-        {
-          objectName: objectName.trim(),
-          arrivalTime,
-          departureTime: departureTime || null,
-          lunchMinutes: lunch,
-          hourlyRate: Number(rate.replace(',', '.')) || 0,
-          travelStartTime: travelStart || null,
-          travelEndTime: travelEnd || null,
-          ...(departureTime ? { status: 'closed' as const } : {}),
-        },
-        { byUid: user!.uid, byName: profile!.name, atISO: new Date().toISOString() },
-      )
+      const base = {
+        objectName: objectName.trim(),
+        arrivalTime,
+        departureTime: departureTime || null,
+        ...(departureTime ? { status: 'closed' as const } : {}),
+      }
+      const fields = isProject
+        ? { ...base, projectAmount: amount.trim() === '' ? null : Number(amount.replace(',', '.')) || 0 }
+        : {
+            ...base,
+            lunchMinutes: lunch,
+            hourlyRate: Number(rate.replace(',', '.')) || 0,
+            travelStartTime: travelStart || null,
+            travelEndTime: travelEnd || null,
+          }
+      // Для проекта проставление суммы — штатный шаг, не «исправление».
+      // Пометку ставим только если админ поменял название/время.
+      const structuralChanged =
+        objectName.trim() !== shift.objectName ||
+        arrivalTime !== shift.arrivalTime ||
+        (departureTime || null) !== (shift.departureTime ?? null)
+      const editor =
+        isProject && !structuralChanged
+          ? undefined
+          : { byUid: user!.uid, byName: profile!.name, atISO: new Date().toISOString() }
+      await adminUpdateShift(shift.id, fields, editor)
       onClose()
     } finally {
       setBusy(false)
@@ -91,30 +105,35 @@ export function ShiftDetailsModal({
           {!editing ? (
             <>
               <Card className="p-4">
-                <p className="text-sm font-semibold text-slate">{t('shift.onSite')}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-slate">{t('shift.onSite')}</p>
+                  <Chip tone={isProject ? 'peach' : 'mist'}>
+                    {isProject ? t('shift.project') : t('shift.hourly')}
+                  </Chip>
+                </div>
                 <p className="font-display font-bold text-ink">{shift.objectName}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {shift.status === 'closed' && (
+                  {!isProject && shift.status === 'closed' && (
                     <Chip tone="mint">
                       {t('shift.work')}: {fmt(workedMinutes(shift))}
                     </Chip>
                   )}
-                  {shift.hourlyRate > 0 && (
+                  {shiftEarnings(shift) > 0 && (
                     <Chip tone="brand">
                       {t('shift.earned')}: {formatMoney(shiftEarnings(shift))}
                     </Chip>
                   )}
-                  {shift.hourlyRate > 0 && (
+                  {!isProject && shift.hourlyRate > 0 && (
                     <Chip tone="mist">
                       {t('admin.rateH')}: {formatMoney(shift.hourlyRate)}
                     </Chip>
                   )}
-                  {shift.lunchMinutes > 0 && (
+                  {!isProject && shift.lunchMinutes > 0 && (
                     <Chip tone="mist">
                       {t('shift.lunch')}: {shift.lunchMinutes} {t('common.minutes')}
                     </Chip>
                   )}
-                  {travelMinutes(shift) > 0 && (
+                  {!isProject && travelMinutes(shift) > 0 && (
                     <Chip tone="peach">
                       {t('shift.travel')}: {fmt(travelMinutes(shift))}
                     </Chip>
@@ -169,42 +188,65 @@ export function ShiftDetailsModal({
             </>
           ) : (
             <>
-              <Field label={t('shift.objectName')} value={objectName} onChange={(e) => setObjectName(e.target.value)} />
+              <Field
+                label={isProject ? t('shift.projectName') : t('shift.objectName')}
+                value={objectName}
+                onChange={(e) => setObjectName(e.target.value)}
+              />
               <div className="grid grid-cols-2 gap-3">
                 <TimeField label={t('shift.arrivalTime')} value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} />
                 <TimeField label={t('shift.departureTime')} value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+
+              {isProject ? (
                 <label className="block">
-                  <span className="mb-1.5 block text-sm font-semibold text-slate">
-                    {t('shift.lunch')} ({t('common.minutes')})
-                  </span>
+                  <span className="mb-1.5 block text-sm font-semibold text-slate">{t('admin.projectAmount')}</span>
                   <input
                     type="number"
+                    inputMode="decimal"
                     min={0}
-                    max={240}
-                    step={5}
-                    value={lunch}
-                    onChange={(e) => setLunch(Number(e.target.value) || 0)}
+                    step={1}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
                     className="w-full min-h-13 rounded-2xl border-2 border-mist bg-white px-4 text-center font-display text-lg outline-none focus:border-brand"
                   />
                 </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-sm font-semibold text-slate">{t('shift.rate')}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.5}
-                    value={rate}
-                    onChange={(e) => setRate(e.target.value)}
-                    className="w-full min-h-13 rounded-2xl border-2 border-mist bg-white px-4 text-center font-display text-lg outline-none focus:border-brand"
-                  />
-                </label>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <TimeField label={t('shift.travelStart')} value={travelStart} onChange={(e) => setTravelStart(e.target.value)} />
-                <TimeField label={t('shift.travelEnd')} value={travelEnd} onChange={(e) => setTravelEnd(e.target.value)} />
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="mb-1.5 block text-sm font-semibold text-slate">
+                        {t('shift.lunch')} ({t('common.minutes')})
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={240}
+                        step={5}
+                        value={lunch}
+                        onChange={(e) => setLunch(Number(e.target.value) || 0)}
+                        className="w-full min-h-13 rounded-2xl border-2 border-mist bg-white px-4 text-center font-display text-lg outline-none focus:border-brand"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-sm font-semibold text-slate">{t('shift.rate')}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.5}
+                        value={rate}
+                        onChange={(e) => setRate(e.target.value)}
+                        className="w-full min-h-13 rounded-2xl border-2 border-mist bg-white px-4 text-center font-display text-lg outline-none focus:border-brand"
+                      />
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <TimeField label={t('shift.travelStart')} value={travelStart} onChange={(e) => setTravelStart(e.target.value)} />
+                    <TimeField label={t('shift.travelEnd')} value={travelEnd} onChange={(e) => setTravelEnd(e.target.value)} />
+                  </div>
+                </>
+              )}
               <div className="flex gap-3">
                 <Button variant="secondary" onClick={() => setEditing(false)} className="flex-1">
                   {t('common.cancel')}

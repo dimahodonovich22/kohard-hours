@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { watchAllShifts } from '@/lib/shifts'
-import { workedMinutes, type Shift } from '@/lib/types'
+import { formatMoney, shiftEarnings, workedMinutes, type Shift } from '@/lib/types'
 import { useDuration } from '@/lib/useDuration'
 import { todayKey } from '@/lib/dates'
 import { Card, Chip, EmptyState, SectionTitle, Spinner } from '@/components/ui'
@@ -47,7 +47,10 @@ export function BoardPage() {
                   {s.arrivalTime}
                 </Chip>
               </div>
-              <p className="mt-1 line-clamp-2 text-sm text-slate">{s.objectName}</p>
+              <div className="mt-1 flex items-center gap-2">
+                {s.workType === 'project' && <Chip tone="peach">{t('shift.project')}</Chip>}
+                <p className="line-clamp-2 text-sm text-slate">{s.objectName}</p>
+              </div>
             </div>
           </Card>
         </button>
@@ -59,13 +62,20 @@ export function BoardPage() {
           {closed.map((s) => (
             <button key={s.id} type="button" onClick={() => setSelected(s)} className="text-left">
               <Card className="animate-rise-1 flex items-center justify-between px-5 py-3.5">
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold text-ink">{s.userName}</p>
-                  <p className="text-sm text-slate">
+                  <p className="truncate text-sm text-slate">
+                    {s.workType === 'project' ? `${t('shift.project')} · ` : ''}
                     {s.objectName} · {s.arrivalTime}–{s.departureTime}
                   </p>
                 </div>
-                <span className="font-display font-bold text-brand-dark">{fmt(workedMinutes(s))}</span>
+                <span className="ml-3 shrink-0 font-display font-bold text-brand-dark">
+                  {s.workType === 'project'
+                    ? shiftEarnings(s) > 0
+                      ? formatMoney(shiftEarnings(s))
+                      : t('shift.project')
+                    : fmt(workedMinutes(s))}
+                </span>
               </Card>
             </button>
           ))}

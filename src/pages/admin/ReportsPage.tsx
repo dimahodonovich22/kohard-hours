@@ -164,12 +164,23 @@ function WorkerRow({
                 </p>
               </div>
               <div className="ml-3 flex shrink-0 flex-col items-end">
-                <span className="font-display font-bold text-brand-dark">{fmt(workedMinutes(s))}</span>
-                {s.hourlyRate > 0 && (
-                  <span className="text-xs font-semibold text-slate">{formatMoney(shiftEarnings(s))}</span>
-                )}
-                {travelMinutes(s) > 0 && (
-                  <span className="text-xs text-slate">+{fmt(travelMinutes(s))} {t('admin.travelH').toLowerCase()}</span>
+                {s.workType === 'project' ? (
+                  <>
+                    <span className="text-xs font-semibold text-peach">{t('shift.project')}</span>
+                    {shiftEarnings(s) > 0 && (
+                      <span className="font-display font-bold text-brand-dark">{formatMoney(shiftEarnings(s))}</span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="font-display font-bold text-brand-dark">{fmt(workedMinutes(s))}</span>
+                    {s.hourlyRate > 0 && (
+                      <span className="text-xs font-semibold text-slate">{formatMoney(shiftEarnings(s))}</span>
+                    )}
+                    {travelMinutes(s) > 0 && (
+                      <span className="text-xs text-slate">+{fmt(travelMinutes(s))} {t('admin.travelH').toLowerCase()}</span>
+                    )}
+                  </>
                 )}
               </div>
             </button>

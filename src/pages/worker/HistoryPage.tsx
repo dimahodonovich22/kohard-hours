@@ -85,12 +85,23 @@ export function HistoryPage() {
               {items.map((s) => (
                 <div key={s.id} className="border-b border-mist/60 px-5 py-3 last:border-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-ink">{s.objectName}</p>
-                    {s.status === 'open' && <Chip tone="brand">{t('shift.openShift')}</Chip>}
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className="truncate font-medium text-ink">{s.objectName}</p>
+                      {s.workType === 'project' && <Chip tone="peach">{t('shift.project')}</Chip>}
+                    </div>
+                    {s.status === 'open' ? (
+                      <Chip tone="brand">{t('shift.openShift')}</Chip>
+                    ) : (
+                      shiftEarnings(s) > 0 && (
+                        <span className="shrink-0 text-sm font-semibold text-brand-dark">{formatMoney(shiftEarnings(s))}</span>
+                      )
+                    )}
                   </div>
                   <p className="mt-0.5 text-sm text-slate">
                     {s.arrivalTime} – {s.departureTime ?? '…'}
-                    {s.lunchMinutes > 0 && ` · ${t('history.lunch').toLowerCase()} ${s.lunchMinutes} ${t('common.minutes')}`}
+                    {s.workType !== 'project' &&
+                      s.lunchMinutes > 0 &&
+                      ` · ${t('history.lunch').toLowerCase()} ${s.lunchMinutes} ${t('common.minutes')}`}
                     {travelMinutes(s) > 0 && ` · ${t('history.travel').toLowerCase()} ${fmt(travelMinutes(s))}`}
                   </p>
                   {s.editedByAdmin && (

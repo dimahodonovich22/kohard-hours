@@ -3,6 +3,8 @@ import type { Timestamp } from 'firebase/firestore'
 export type Role = 'worker' | 'admin'
 export type UserStatus = 'pending' | 'active' | 'blocked'
 export type Lang = 'ua' | 'ru'
+/** Как оплачивается смена: по часам (часы × ставка) или по проекту (фикс. сумма) */
+export type WorkType = 'hourly' | 'project'
 
 export interface UserProfile {
   uid: string
@@ -27,6 +29,10 @@ export interface Shift {
   userName: string
   /** YYYY-MM-DD (локальная дата работника) */
   date: string
+  /** hourly — по часам; project — по проекту (без часов, фикс. сумма от админа) */
+  workType: WorkType
+  /** Сумма за проект в €, вводит админ (только для project) */
+  projectAmount: number | null
   objectName: string
   /** HH:mm — время, выбранное работником */
   arrivalTime: string
@@ -55,6 +61,8 @@ export function minutesBetween(start: string | null, end: string | null): number
 }
 
 export function workedMinutes(s: Shift): number {
+  // По проекту часы не считаются
+  if (s.workType === 'project') return 0
   if (!s.departureTime) return 0
   return Math.max(0, minutesBetween(s.arrivalTime, s.departureTime) - (s.lunchMinutes || 0))
 }
@@ -86,8 +94,12 @@ export function minutesToDecimal(min: number): number {
   return Math.round((min / 60) * 100) / 100
 }
 
-/** Заработок за смену = отработанные часы × ставка (дорога не оплачивается) */
+/**
+ * Заработок за смену. По проекту — фиксированная сумма (её вводит админ),
+ * по часам — отработанные часы × ставка (дорога не оплачивается).
+ */
 export function shiftEarnings(s: Shift): number {
+  if (s.workType === 'project') return s.projectAmount ?? 0
   const hours = workedMinutes(s) / 60
   return Math.round(hours * (s.hourlyRate || 0) * 100) / 100
 }

@@ -124,17 +124,20 @@ export async function exportPdf(summaries: WorkerSummary[], period: string, t: T
             th(t('admin.rateH'), true),
             th(t('admin.earnedH'), true),
           ],
-          ...w.shifts.map((s) => [
-            td(s.date.split('-').reverse().join('.')),
-            td(s.objectName),
-            td(s.arrivalTime, { center: true }),
-            td(s.departureTime ?? '—', { center: true }),
-            td(s.lunchMinutes ? String(s.lunchMinutes) : '—', { center: true }),
-            td(travelMinutes(s) ? fmt(travelMinutes(s)) : '—', { center: true }),
-            td(fmt(workedMinutes(s)), { center: true, bold: true }),
-            td(s.hourlyRate ? formatMoney(s.hourlyRate) : '—', { center: true }),
-            td(formatMoney(shiftEarnings(s)), { center: true, bold: true }),
-          ]),
+          ...w.shifts.map((s) => {
+            const isProj = s.workType === 'project'
+            return [
+              td(s.date.split('-').reverse().join('.')),
+              td(isProj ? `${s.objectName} (${t('shift.project')})` : s.objectName),
+              td(s.arrivalTime, { center: true }),
+              td(s.departureTime ?? '—', { center: true }),
+              td(!isProj && s.lunchMinutes ? String(s.lunchMinutes) : '—', { center: true }),
+              td(travelMinutes(s) ? fmt(travelMinutes(s)) : '—', { center: true }),
+              td(isProj ? '—' : fmt(workedMinutes(s)), { center: true, bold: true }),
+              td(!isProj && s.hourlyRate ? formatMoney(s.hourlyRate) : '—', { center: true }),
+              td(formatMoney(shiftEarnings(s)), { center: true, bold: true }),
+            ]
+          }),
         ],
       },
       layout: tableLayout,

@@ -29,6 +29,7 @@ export async function openShift(opts: {
   userId: string
   userName: string
   date: string
+  workType: 'hourly' | 'project'
   objectName: string
   arrivalTime: string
   photo: File | Blob
@@ -46,6 +47,8 @@ export async function openShift(opts: {
     userId: opts.userId,
     userName: opts.userName,
     date: opts.date,
+    workType: opts.workType,
+    projectAmount: null,
     objectName: opts.objectName.trim(),
     arrivalTime: opts.arrivalTime,
     arrivalAt: serverTimestamp(),
@@ -88,13 +91,16 @@ export async function closeShift(opts: {
   })
 }
 
-/** Правка админом: любые поля + пометка «исправлено админом» */
+/**
+ * Правка админом. Если передан editor — ставится пометка «исправлено админом».
+ * Пометку не ставим, когда админ лишь проставляет сумму проекта (штатный шаг).
+ */
 export function adminUpdateShift(
   shiftId: string,
   fields: Partial<Omit<Shift, 'id'>>,
-  editor: AdminEdit,
+  editor?: AdminEdit,
 ): Promise<void> {
-  return updateDoc(doc(shiftsCol, shiftId), { ...fields, editedByAdmin: editor })
+  return updateDoc(doc(shiftsCol, shiftId), editor ? { ...fields, editedByAdmin: editor } : fields)
 }
 
 export function adminDeleteShift(shiftId: string): Promise<void> {
