@@ -38,6 +38,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Справочник объектов: читают все активные пользователи (для выпадающего
+    // списка), редактирует только админ
+    match /objects/{objectId} {
+      allow read: if isActiveWorker();
+      allow write: if isAdmin();
+    }
+
     match /shifts/{shiftId} {
       allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
       // Создание: только своя смена, серверная метка приезда обязательна

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context/AuthContext'
 import { closeShift, openShift, watchDayShifts } from '@/lib/shifts'
+import { watchObjects, type SiteObject } from '@/lib/objects'
 import {
   formatMoney,
   minutesBetween,
@@ -23,6 +24,7 @@ export function TodayPage() {
   const fmt = useDuration()
   const { user, profile } = useAuth()
   const [shifts, setShifts] = useState<Shift[] | null>(null)
+  const [objects, setObjects] = useState<SiteObject[]>([])
   const [view, setView] = useState<View>('idle')
   const [arriveType, setArriveType] = useState<WorkType>('hourly')
   const [reviewed, setReviewed] = useState<Shift | null>(null)
@@ -32,6 +34,8 @@ export function TodayPage() {
     if (!user) return
     return watchDayShifts(user.uid, date, setShifts)
   }, [user, date])
+
+  useEffect(() => watchObjects(setObjects), [])
 
   const open = useMemo(() => shifts?.find((s) => s.status === 'open') ?? null, [shifts])
   const closed = useMemo(() => shifts?.filter((s) => s.status === 'closed') ?? [], [shifts])
@@ -58,6 +62,7 @@ export function TodayPage() {
           userName={profile!.name}
           date={date}
           workType={arriveType}
+          objects={objects}
           onDone={() => setView('idle')}
           onCancel={() => setView('idle')}
         />
@@ -232,6 +237,7 @@ function ArriveForm({
   userName,
   date,
   workType,
+  objects,
   onDone,
   onCancel,
 }: {
@@ -239,12 +245,17 @@ function ArriveForm({
   userName: string
   date: string
   workType: WorkType
+  objects: SiteObject[]
   onDone: () => void
   onCancel: () => void
 }) {
   const { t } = useTranslation()
   const isProject = workType === 'project'
-  const [objectName, setObjectName] = useState('')
+  const hasObjects = objects.length > 0
+  // Если справочник пуст — оставляем ручной ввод, чтобы работника не заблокировать
+  const [objectId, setObjectId] = useState('')
+  const [objectText, setObjectText] = useState('')
+  const [objectError, setObjectError] = useState('')
   const [time, setTime] = useState(nowTime())
   // Ставка по умолчанию — та, что работник вводил в прошлый раз (обычно не меняется)
   const [rate, setRate] = useState(() => localStorage.getItem(RATE_STORAGE_KEY) ?? '')
@@ -254,8 +265,12 @@ function ArriveForm({
   const [busy, setBusy] = useState(false)
   const [photoError, setPhotoError] = useState('')
 
+  const selected = objects.find((o) => o.id === objectId)
+  const objectName = hasObjects ? (selected?.name ?? '') : objectText.trim()
+
   async function submit(e: FormEvent) {
     e.preventDefault()
+    if (!objectName) return setObjectError(t('common.required'))
     if (!photo) return setPhotoError(t('shift.photoRequired'))
     const rateNum = isProject ? 0 : Number(rate.replace(',', '.')) || 0
     if (!isProject) localStorage.setItem(RATE_STORAGE_KEY, rate)
@@ -267,6 +282,7 @@ function ArriveForm({
         date,
         workType,
         objectName,
+        objectId: hasObjects && selected ? selected.id : null,
         arrivalTime: time,
         photo,
         hourlyRate: rateNum,
@@ -287,13 +303,52 @@ function ArriveForm({
         </h2>
       </div>
       <form onSubmit={submit} className="flex flex-col gap-4 p-5">
-        <Field
-          label={isProject ? t('shift.projectName') : t('shift.objectName')}
-          placeholder={t('shift.objectPlaceholder')}
-          value={objectName}
-          onChange={(e) => setObjectName(e.target.value)}
-          required
-        />
+        {hasObjects ? (
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-slate">
+              {isProject ? t('shift.projectName') : t('shift.objectName')}
+            </span>
+            <div className="relative">
+              <select
+                value={objectId}
+                onChange={(e) => {
+                  setObjectId(e.target.value)
+                  setObjectError('')
+                }}
+                className={`w-full min-h-13 appearance-none rounded-2xl border-2 bg-white px-4 pr-11 text-base text-ink outline-none focus:border-brand ${
+                  objectError ? 'border-danger/60' : 'border-mist'
+                } ${objectId ? '' : 'text-slate/50'}`}
+              >
+                <option value="" disabled>
+                  {t('shift.selectObject')}
+                </option>
+                {objects.map((o) => (
+                  <option key={o.id} value={o.id} className="text-ink">
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+              <svg viewBox="0 0 24 24" className="pointer-events-none absolute right-4 top-1/2 size-5 -translate-y-1/2 text-slate" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </div>
+            {objectError && <span className="mt-1 block text-sm font-medium text-danger">{objectError}</span>}
+          </label>
+        ) : (
+          <div>
+            <Field
+              label={isProject ? t('shift.projectName') : t('shift.objectName')}
+              placeholder={t('shift.objectPlaceholder')}
+              value={objectText}
+              onChange={(e) => {
+                setObjectText(e.target.value)
+                setObjectError('')
+              }}
+              error={objectError}
+            />
+            <p className="mt-1.5 text-xs text-slate">{t('shift.objectsEmptyWorker')}</p>
+          </div>
+        )}
 
         {isProject ? (
           <TimeField label={t('shift.arrivalTime')} value={time} onChange={(e) => setTime(e.target.value)} required />

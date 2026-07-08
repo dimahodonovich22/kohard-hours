@@ -31,6 +31,7 @@ export async function openShift(opts: {
   date: string
   workType: 'hourly' | 'project'
   objectName: string
+  objectId?: string | null
   arrivalTime: string
   photo: File | Blob
   hourlyRate: number
@@ -50,6 +51,7 @@ export async function openShift(opts: {
     workType: opts.workType,
     projectAmount: null,
     objectName: opts.objectName.trim(),
+    objectId: opts.objectId ?? null,
     arrivalTime: opts.arrivalTime,
     arrivalAt: serverTimestamp(),
     arrivalPhotoPath: photoPath,

@@ -34,6 +34,8 @@ export interface Shift {
   /** Сумма за проект в €, вводит админ (только для project) */
   projectAmount: number | null
   objectName: string
+  /** Ссылка на объект из справочника (если выбран из списка) */
+  objectId: string | null
   /** HH:mm — время, выбранное работником */
   arrivalTime: string
   /** Серверная метка создания записи (антифрод) */
