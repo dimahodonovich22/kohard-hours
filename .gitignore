@@ -11,3 +11,8 @@ firestore-debug.log
 ui-debug.log
 .firebase
 *.tsbuildinfo
+
+# Ruflo / claude-flow tooling artifacts (не для репозитория)
+.claude-flow/
+.claude/proven-config.json
+.claude/.proven-config-version
