@@ -13,6 +13,7 @@ import { RequestsPage } from './pages/admin/RequestsPage'
 import { BoardPage } from './pages/admin/BoardPage'
 import { ReportsPage } from './pages/admin/ReportsPage'
 import { WorkersPage } from './pages/admin/WorkersPage'
+import { WorkerDetailPage } from './pages/admin/WorkerDetailPage'
 import { ObjectsPage } from './pages/admin/ObjectsPage'
 import { usePendingRequests } from './pages/admin/usePendingRequests'
 
@@ -73,6 +74,7 @@ function AdminApp() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/requests" element={<RequestsPage />} />
         <Route path="/workers" element={<WorkersPage />} />
+        <Route path="/workers/:uid" element={<WorkerDetailPage />} />
         <Route path="/objects" element={<ObjectsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

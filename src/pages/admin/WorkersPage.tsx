@@ -1,17 +1,15 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { doc, updateDoc } from 'firebase/firestore'
 import { FirebaseError } from 'firebase/app'
-import { db } from '@/lib/firebase'
-import { demoDb, isDemo } from '@/lib/demo'
 import { adminCreateWorker } from '@/lib/adminUsers'
 import { Button, Card, Chip, Field, Spinner } from '@/components/ui'
 import { useAllUsers } from './usePendingRequests'
 import type { Lang } from '@/i18n'
-import type { UserProfile } from '@/lib/types'
 
 export function WorkersPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const users = useAllUsers()
   const [creating, setCreating] = useState(false)
 
@@ -21,12 +19,6 @@ export function WorkersPage() {
         <Spinner className="size-8" />
       </div>
     )
-  }
-
-  async function toggleBlock(u: UserProfile) {
-    const status = u.status === 'blocked' ? 'active' : 'blocked'
-    if (isDemo) return void demoDb.updateUser(u.uid, { status })
-    await updateDoc(doc(db, 'users', u.uid), { status })
   }
 
   return (
@@ -41,39 +33,49 @@ export function WorkersPage() {
         </Button>
       </div>
 
-      {users.map((u) => (
-        <Card key={u.uid} className="animate-rise flex items-center justify-between gap-3 px-5 py-4">
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-ink">{u.name}</p>
-            <p className="truncate text-sm text-slate">{u.email}</p>
-            {u.phone && (
-              <a href={`tel:${u.phone}`} className="text-sm font-semibold text-brand-dark">
-                {u.phone}
-              </a>
-            )}
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            {u.role === 'admin' ? (
-              <Chip tone="brand">{t('admin.adminRole')}</Chip>
-            ) : u.status === 'blocked' ? (
-              <Chip tone="danger">{t('admin.blocked')}</Chip>
-            ) : u.status === 'pending' ? (
-              <Chip tone="peach">{t('admin.pending')}</Chip>
-            ) : (
-              <Chip tone="mint">{t('admin.active')}</Chip>
-            )}
-            {u.role !== 'admin' && u.status !== 'pending' && (
-              <button
-                type="button"
-                onClick={() => void toggleBlock(u)}
-                className={`text-sm font-bold ${u.status === 'blocked' ? 'text-brand-dark' : 'text-danger'}`}
-              >
-                {u.status === 'blocked' ? t('admin.unblock') : t('admin.block')}
-              </button>
-            )}
-          </div>
-        </Card>
-      ))}
+      {users.map((u) => {
+        const statusChip =
+          u.role === 'admin' ? (
+            <Chip tone="brand">{t('admin.adminRole')}</Chip>
+          ) : u.status === 'blocked' ? (
+            <Chip tone="danger">{t('admin.blocked')}</Chip>
+          ) : u.status === 'pending' ? (
+            <Chip tone="peach">{t('admin.pending')}</Chip>
+          ) : (
+            <Chip tone="mint">{t('admin.active')}</Chip>
+          )
+
+        // Работника можно открыть — история с фильтрами; админа нет
+        if (u.role === 'admin') {
+          return (
+            <Card key={u.uid} className="animate-rise flex items-center justify-between gap-3 px-5 py-4">
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-ink">{u.name}</p>
+                <p className="truncate text-sm text-slate">{u.email}</p>
+              </div>
+              {statusChip}
+            </Card>
+          )
+        }
+
+        return (
+          <button key={u.uid} type="button" onClick={() => navigate(`/workers/${u.uid}`)} className="w-full text-left">
+            <Card className="animate-rise flex items-center justify-between gap-3 px-5 py-4 transition-colors active:bg-mint/30">
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-ink">{u.name}</p>
+                <p className="truncate text-sm text-slate">{u.email}</p>
+                {u.phone && <p className="truncate text-sm text-slate">{u.phone}</p>}
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {statusChip}
+                <svg viewBox="0 0 24 24" className="size-5 text-slate/60" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Card>
+          </button>
+        )
+      })}
 
       {creating && <CreateWorkerModal onClose={() => setCreating(false)} />}
     </div>
