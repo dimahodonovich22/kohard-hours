@@ -50,73 +50,140 @@ export function demoPhotoUrl(path: string | null): string {
   return photoUrls.get(path) ?? PLACEHOLDER
 }
 
-/* ---- Дата-хелперы для сида ---- */
-function dateKey(offsetDays: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() - offsetDays)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-/* ---- Сид пользователей ---- */
+/* ---- Генератор демо-данных: 30 работников + месяц смен ---- */
 const ADMIN_UID = 'demo-admin'
-const IVAN_UID = 'demo-ivan'
-const PETRO_UID = 'demo-petro'
+const IVAN_UID = 'demo-w0' // почасовой — под ним заходит демо-«Працівник»
+const PETRO_UID = 'demo-w1' // проектный
 
-const users = new Coll<UserProfile>([
+const ri = (min: number, max: number) => min + Math.floor(Math.random() * (max - min + 1))
+const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
+const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+
+const FIRST = [
+  'Іван', 'Петро', 'Олександр', 'Андрій', 'Микола', 'Сергій', 'Дмитро', 'Василь', 'Богдан', 'Тарас',
+  'Юрій', 'Роман', 'Олег', 'Ігор', 'Максим', 'Віктор', 'Павло', 'Степан', 'Володимир', 'Артем',
+  'Назар', 'Остап', 'Ярослав', 'Марія', 'Оксана', 'Наталія', 'Ірина', 'Софія', 'Ольга', 'Катерина',
+]
+const LAST = [
+  'Коваленко', 'Бондаренко', 'Шевченко', 'Ткаченко', 'Кравченко', 'Мельник', 'Бойко', 'Ковальчук', 'Поліщук', 'Марченко',
+  'Савченко', 'Руденко', 'Лисенко', 'Гончаренко', 'Мороз', 'Клименко', 'Данилюк', 'Кравець', 'Пилипчук', 'Захарчук',
+  'Іваненко', 'Петренко', 'Сидоренко', 'Гнатюк', 'Дяченко', 'Романюк', 'Кулик', 'Науменко', 'Швець', 'Ткачук',
+]
+
+const HOURLY_OBJECTS = [
+  'Kerkstraat 5, Antwerpen', 'Brugge — Markt 12', 'Meir 40, Antwerpen', 'Stationsstraat 8, Mechelen',
+  'Grote Markt 3, Leuven', 'Nieuwstraat 22, Gent', 'Dorpsstraat 15, Aalst', 'Lange Nieuwstraat 7, Antwerpen',
+]
+const PROJECT_OBJECTS = [
+  'Gent, Veldstraat 20', 'Vilvoorde — Industrieweg 9', 'Hasselt, Kempische Steenweg 55',
+  'Kortrijk, Doorniksewijk 30', 'Oostende, Zeedijk 100', 'Brugge — Ezelstraat 44',
+]
+
+const objectsSeed: SiteObject[] = [
+  ...HOURLY_OBJECTS.map((name, i) => ({ id: `obj-h-${i}`, name, workType: 'hourly' as WorkType })),
+  ...PROJECT_OBJECTS.map((name, i) => ({ id: `obj-p-${i}`, name, workType: 'project' as WorkType })),
+]
+
+const usersSeed: UserProfile[] = [
   { uid: ADMIN_UID, name: 'Саша (власник)', email: 'admin@kohard.be', phone: '+32 470 00 00 01', role: 'admin', status: 'active', language: 'ua', createdAt: fakeTs(new Date()) },
-  { uid: IVAN_UID, name: 'Іван Робітник', email: 'ivan@kohard.be', phone: '+32 470 00 00 02', role: 'worker', status: 'active', language: 'ua', createdAt: fakeTs(new Date()) },
-  { uid: PETRO_UID, name: 'Петро Майстер', email: 'petro@kohard.be', phone: '+32 470 00 00 03', role: 'worker', status: 'active', language: 'ua', createdAt: fakeTs(new Date()) },
-  { uid: uid('user'), name: 'Новий Кандидат', email: 'new@kohard.be', phone: '+32 470 00 00 09', role: 'worker', status: 'pending', language: 'ua', createdAt: fakeTs(new Date()) },
-])
+]
+const shiftsSeed: Shift[] = []
+let sid = 1
 
-const objects = new Coll<SiteObject>([
-  { id: 'obj-1', name: 'Kerkstraat 5, Antwerpen', workType: 'hourly' },
-  { id: 'obj-2', name: 'Brugge — Markt 12', workType: 'hourly' },
-  { id: 'obj-3', name: 'Gent, Veldstraat 20', workType: 'project' },
-])
+const now = new Date()
+const Y = now.getFullYear()
+const M = now.getMonth()
+const TODAY = now.getDate()
 
-function seedShift(p: Partial<Shift> & { id: string }): Shift {
-  return {
-    userId: IVAN_UID,
-    userName: 'Іван Робітник',
-    date: dateKey(0),
-    workType: 'hourly',
-    projectAmount: null,
-    objectName: '',
-    objectId: null,
-    arrivalTime: '08:00',
-    arrivalAt: fakeTs(new Date()),
-    arrivalPhotoPath: `seed/${p.id}/a`,
-    departureTime: '16:30',
-    departureAt: fakeTs(new Date()),
-    departurePhotoPath: `seed/${p.id}/d`,
-    lunchMinutes: 30,
-    travelStartTime: null,
-    travelEndTime: null,
-    hourlyRate: 20,
-    status: 'closed',
-    editedByAdmin: null,
-    ...p,
+for (let i = 0; i < 30; i++) {
+  const uidW = i === 0 ? IVAN_UID : i === 1 ? PETRO_UID : `demo-w${i}`
+  const name = `${FIRST[i]} ${LAST[i]}`
+  const workType: WorkType = i % 2 === 0 ? 'hourly' : 'project'
+  const rate = ri(16, 24)
+  usersSeed.push({
+    uid: uidW,
+    name,
+    email: `worker${i}@kohard.be`,
+    phone: `+32 470 ${String(100 + i).padStart(3, '0')} ${String(ri(10, 99))}`,
+    role: 'worker',
+    status: 'active',
+    language: 'ua',
+    createdAt: fakeTs(new Date(Y, M, 1)),
+  })
+
+  // Смены за текущий месяц: будни (пн–пт), с пропусками ~15%
+  for (let d = 1; d <= TODAY; d++) {
+    const day = new Date(Y, M, d)
+    const dow = day.getDay()
+    if (dow === 0 || dow === 6) continue
+    if (Math.random() < 0.15) continue
+
+    const id = `s${sid++}`
+    const isToday = d === TODAY
+    // немного открытых смен «прямо сейчас» на сегодня — оживить доску
+    const open = isToday && i % 6 === 0
+    const arrMin = ri(7 * 12, 8 * 12 + 6) * 5 // 07:00–08:30, шаг 5 мин
+
+    if (workType === 'hourly') {
+      const lunch = pick([30, 30, 45])
+      const workedMin = ri(7, 10) * 60 + pick([0, 0, 30])
+      const depMin = arrMin + workedMin + lunch
+      shiftsSeed.push({
+        id,
+        userId: uidW,
+        userName: name,
+        date: `${Y}-${String(M + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+        workType: 'hourly',
+        projectAmount: null,
+        objectName: pick(HOURLY_OBJECTS),
+        objectId: null,
+        arrivalTime: hhmm(arrMin),
+        arrivalAt: fakeTs(new Date(Y, M, d, 8)),
+        arrivalPhotoPath: `seed/${id}/a`,
+        departureTime: open ? null : hhmm(depMin),
+        departureAt: open ? null : fakeTs(new Date(Y, M, d, 17)),
+        departurePhotoPath: open ? null : `seed/${id}/d`,
+        lunchMinutes: open ? 0 : lunch,
+        travelStartTime: null,
+        travelEndTime: null,
+        hourlyRate: rate,
+        status: open ? 'open' : 'closed',
+        editedByAdmin: null,
+      })
+    } else {
+      const depMin = ri(16 * 12, 18 * 12) * 5 // 16:00–18:00
+      shiftsSeed.push({
+        id,
+        userId: uidW,
+        userName: name,
+        date: `${Y}-${String(M + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+        workType: 'project',
+        projectAmount: open ? null : ri(20, 60) * 10, // 200–600 €
+        objectName: pick(PROJECT_OBJECTS),
+        objectId: null,
+        arrivalTime: hhmm(arrMin),
+        arrivalAt: fakeTs(new Date(Y, M, d, 8)),
+        arrivalPhotoPath: `seed/${id}/a`,
+        departureTime: open ? null : hhmm(depMin),
+        departureAt: open ? null : fakeTs(new Date(Y, M, d, 17)),
+        departurePhotoPath: open ? null : `seed/${id}/d`,
+        lunchMinutes: 0,
+        travelStartTime: null,
+        travelEndTime: null,
+        hourlyRate: 0,
+        status: open ? 'open' : 'closed',
+        editedByAdmin: null,
+      })
+    }
   }
 }
 
-const shifts = new Coll<Shift>([
-  seedShift({ id: 'sh-1', objectName: 'Kerkstraat 5, Antwerpen', objectId: 'obj-1', arrivalTime: '08:00', departureTime: '16:30', hourlyRate: 20 }),
-  seedShift({ id: 'sh-2', date: dateKey(1), objectName: 'Brugge — Markt 12', objectId: 'obj-2', arrivalTime: '07:30', departureTime: '15:00', lunchMinutes: 45, hourlyRate: 20 }),
-  seedShift({
-    id: 'sh-3',
-    userId: PETRO_UID,
-    userName: 'Петро Майстер',
-    workType: 'project',
-    objectName: 'Gent, Veldstraat 20',
-    objectId: 'obj-3',
-    arrivalTime: '08:00',
-    departureTime: '17:00',
-    lunchMinutes: 0,
-    hourlyRate: 0,
-    projectAmount: 950,
-  }),
-])
+// одна заявка на подтверждение — показать бейдж «Заявки»
+usersSeed.push({ uid: uid('user'), name: 'Новий Кандидат', email: 'new@kohard.be', phone: '+32 470 00 00 99', role: 'worker', status: 'pending', language: 'ua', createdAt: fakeTs(new Date()) })
+
+const users = new Coll<UserProfile>(usersSeed)
+const objects = new Coll<SiteObject>(objectsSeed)
+const shifts = new Coll<Shift>(shiftsSeed)
 
 /* ---- Демо-авторизация ---- */
 let currentUid: string | null = null

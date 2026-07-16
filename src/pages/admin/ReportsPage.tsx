@@ -111,24 +111,34 @@ function WorkerRow({
 }) {
   const { t } = useTranslation()
   const fmt = useDuration()
+  const hasHours = summary.workMin + summary.travelMin > 0
   return (
     <Card className="animate-rise overflow-hidden">
       <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-5 py-4 text-left">
         <div>
           <p className="font-display font-bold text-ink">{summary.userName}</p>
           <p className="mt-0.5 text-sm text-slate">
-            {summary.days} {t('admin.days').toLowerCase()} · {t('admin.workH').toLowerCase()}{' '}
-            {fmt(summary.workMin)}
-            {summary.travelMin > 0 && ` · ${t('admin.travelH').toLowerCase()} ${fmt(summary.travelMin)}`}
+            {summary.days} {t('admin.days').toLowerCase()}
+            {hasHours
+              ? ` · ${t('admin.workH').toLowerCase()} ${fmt(summary.workMin)}${
+                  summary.travelMin > 0 ? ` · ${t('admin.travelH').toLowerCase()} ${fmt(summary.travelMin)}` : ''
+                }`
+              : ` · ${t('shift.project').toLowerCase()}`}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end">
-            <span className="font-display text-lg font-bold text-brand-dark">
-              {fmt(summary.workMin + summary.travelMin)}
-            </span>
-            {summary.earnings > 0 && (
-              <span className="text-sm font-semibold text-slate">{formatMoney(summary.earnings)}</span>
+            {hasHours ? (
+              <>
+                <span className="font-display text-lg font-bold text-brand-dark">
+                  {fmt(summary.workMin + summary.travelMin)}
+                </span>
+                {summary.earnings > 0 && (
+                  <span className="text-sm font-semibold text-slate">{formatMoney(summary.earnings)}</span>
+                )}
+              </>
+            ) : (
+              <span className="font-display text-lg font-bold text-brand-dark">{formatMoney(summary.earnings)}</span>
             )}
           </div>
           <svg
