@@ -6,6 +6,7 @@ import { useDuration } from '@/lib/useDuration'
 import { todayKey } from '@/lib/dates'
 import { Card, Chip, EmptyState, SectionTitle, Spinner } from '@/components/ui'
 import { StoragePhoto } from '@/components/StoragePhoto'
+import { TypeBadge } from '@/components/TypeBadge'
 import { ShiftDetailsModal } from './ShiftDetailsModal'
 
 /** «Кто сейчас на объектах» — живой снимок дня */
@@ -47,8 +48,8 @@ export function BoardPage() {
                   {s.arrivalTime}
                 </Chip>
               </div>
-              <div className="mt-1 flex items-center gap-2">
-                {s.workType === 'project' && <Chip tone="peach">{t('shift.project')}</Chip>}
+              <div className="mt-1.5 flex items-center gap-2">
+                <TypeBadge type={s.workType} />
                 <p className="line-clamp-2 text-sm text-slate">{s.objectName}</p>
               </div>
             </div>
@@ -63,9 +64,11 @@ export function BoardPage() {
             <button key={s.id} type="button" onClick={() => setSelected(s)} className="text-left">
               <Card className="animate-rise-1 flex items-center justify-between px-5 py-3.5">
                 <div className="min-w-0">
-                  <p className="font-semibold text-ink">{s.userName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-semibold text-ink">{s.userName}</p>
+                    <TypeBadge type={s.workType} />
+                  </div>
                   <p className="truncate text-sm text-slate">
-                    {s.workType === 'project' ? `${t('shift.project')} · ` : ''}
                     {s.objectName} · {s.arrivalTime}–{s.departureTime}
                   </p>
                 </div>

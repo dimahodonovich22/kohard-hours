@@ -6,6 +6,7 @@ import { useDuration } from '@/lib/useDuration'
 import { humanDate } from '@/lib/dates'
 import { Button, Card, EmptyState, SectionTitle, Spinner } from '@/components/ui'
 import { PeriodPicker, usePeriod } from '@/components/PeriodPicker'
+import { TypeBadge } from '@/components/TypeBadge'
 import { summarize, type WorkerSummary } from '@/reports/data'
 import { ShiftDetailsModal } from './ShiftDetailsModal'
 
@@ -112,18 +113,24 @@ function WorkerRow({
   const { t } = useTranslation()
   const fmt = useDuration()
   const hasHours = summary.workMin + summary.travelMin > 0
+  const hasHourly = summary.shifts.some((s) => s.workType !== 'project')
+  const hasProject = summary.shifts.some((s) => s.workType === 'project')
   return (
     <Card className="animate-rise overflow-hidden">
-      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-5 py-4 text-left">
-        <div>
-          <p className="font-display font-bold text-ink">{summary.userName}</p>
-          <p className="mt-0.5 text-sm text-slate">
+      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-display font-bold text-ink">{summary.userName}</p>
+            {hasHourly && <TypeBadge type="hourly" />}
+            {hasProject && <TypeBadge type="project" />}
+          </div>
+          <p className="mt-1 text-sm text-slate">
             {summary.days} {t('admin.days').toLowerCase()}
             {hasHours
               ? ` · ${t('admin.workH').toLowerCase()} ${fmt(summary.workMin)}${
                   summary.travelMin > 0 ? ` · ${t('admin.travelH').toLowerCase()} ${fmt(summary.travelMin)}` : ''
                 }`
-              : ` · ${t('shift.project').toLowerCase()}`}
+              : ''}
           </p>
         </div>
         <div className="flex items-center gap-3">
