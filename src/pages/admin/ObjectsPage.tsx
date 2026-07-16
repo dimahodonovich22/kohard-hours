@@ -1,14 +1,44 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { addObject, deleteObject, renameObject, watchObjects, type SiteObject } from '@/lib/objects'
+import {
+  addObject,
+  deleteObject,
+  renameObject,
+  setObjectType,
+  watchObjects,
+  type SiteObject,
+} from '@/lib/objects'
+import type { WorkType } from '@/lib/types'
 import { Button, Card, EmptyState, Spinner } from '@/components/ui'
+
+/** Переключатель типа объекта: по часам / проект */
+function TypeToggle({ value, onChange }: { value: WorkType; onChange: (t: WorkType) => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="inline-flex rounded-2xl bg-mist p-1">
+      {(['hourly', 'project'] as const).map((wt) => (
+        <button
+          key={wt}
+          type="button"
+          onClick={() => onChange(wt)}
+          className={`min-h-10 rounded-xl px-4 text-sm font-bold transition-colors ${
+            value === wt ? (wt === 'project' ? 'bg-ink text-white' : 'bg-brand text-white') : 'text-slate'
+          }`}
+        >
+          {t(`shift.${wt}`)}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export function ObjectsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [objects, setObjects] = useState<SiteObject[] | null>(null)
   const [name, setName] = useState('')
+  const [type, setType] = useState<WorkType>('hourly')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [busy, setBusy] = useState(false)
@@ -20,7 +50,7 @@ export function ObjectsPage() {
     if (!name.trim()) return
     setBusy(true)
     try {
-      await addObject(name)
+      await addObject(name, type)
       setName('')
     } finally {
       setBusy(false)
@@ -54,14 +84,15 @@ export function ObjectsPage() {
       </div>
 
       <Card className="p-4">
-        <form onSubmit={add} className="flex gap-2">
+        <form onSubmit={add} className="flex flex-col gap-3">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t('admin.objectFieldLabel')}
-            className="min-w-0 flex-1 min-h-12 rounded-2xl border-2 border-mist bg-white px-4 text-ink outline-none placeholder:text-slate/50 focus:border-brand"
+            className="min-h-12 rounded-2xl border-2 border-mist bg-white px-4 text-ink outline-none placeholder:text-slate/50 focus:border-brand"
           />
-          <Button type="submit" disabled={busy || !name.trim()} className="shrink-0">
+          <TypeToggle value={type} onChange={setType} />
+          <Button type="submit" disabled={busy || !name.trim()} className="w-full">
             {busy ? <Spinner className="text-white" /> : t('admin.addObject')}
           </Button>
         </form>
@@ -90,13 +121,22 @@ export function ObjectsPage() {
               </>
             ) : (
               <>
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-mint text-brand-deep">
-                  <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10Z" />
-                    <circle cx="12" cy="11" r="2" />
-                  </svg>
-                </span>
-                <p className="min-w-0 flex-1 truncate font-medium text-ink">{o.name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-ink">{o.name}</p>
+                  {/* Тап по бейджу переключает тип объекта */}
+                  <button
+                    type="button"
+                    onClick={() => void setObjectType(o.id, o.workType === 'project' ? 'hourly' : 'project')}
+                    className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+                      o.workType === 'project' ? 'bg-peach/40 text-ink' : 'bg-mint text-brand-deep'
+                    }`}
+                  >
+                    {t(`shift.${o.workType}`)}
+                    <svg viewBox="0 0 24 24" className="size-3.5 opacity-60" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 10l-3 3 3 3M4 13h9M17 14l3-3-3-3M20 11h-9" />
+                    </svg>
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => {

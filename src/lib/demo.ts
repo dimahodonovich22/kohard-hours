@@ -70,9 +70,9 @@ const users = new Coll<UserProfile>([
 ])
 
 const objects = new Coll<SiteObject>([
-  { id: 'obj-1', name: 'Kerkstraat 5, Antwerpen' },
-  { id: 'obj-2', name: 'Brugge — Markt 12' },
-  { id: 'obj-3', name: 'Gent, Veldstraat 20' },
+  { id: 'obj-1', name: 'Kerkstraat 5, Antwerpen', workType: 'hourly' },
+  { id: 'obj-2', name: 'Brugge — Markt 12', workType: 'hourly' },
+  { id: 'obj-3', name: 'Gent, Veldstraat 20', workType: 'project' },
 ])
 
 function seedShift(p: Partial<Shift> & { id: string }): Shift {
@@ -200,12 +200,16 @@ export const demoDb = {
   watchObjects(cb: (o: SiteObject[]) => void): Fn {
     return objects.sub(() => cb([...objects.data].sort((a, b) => a.name.localeCompare(b.name))))
   },
-  addObject(name: string) {
-    objects.set([...objects.data, { id: uid('obj'), name: name.trim() }])
+  addObject(name: string, workType: WorkType) {
+    objects.set([...objects.data, { id: uid('obj'), name: name.trim(), workType }])
     return Promise.resolve()
   },
   renameObject(id: string, name: string) {
     objects.set(objects.data.map((o) => (o.id === id ? { ...o, name: name.trim() } : o)))
+    return Promise.resolve()
+  },
+  setObjectType(id: string, workType: WorkType) {
+    objects.set(objects.data.map((o) => (o.id === id ? { ...o, workType } : o)))
     return Promise.resolve()
   },
   deleteObject(id: string) {

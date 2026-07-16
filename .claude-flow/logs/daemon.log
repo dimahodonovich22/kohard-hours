@@ -1,0 +1,30 @@
+[2026-07-16T13:17:53.654Z] [INFO] AI workers disabled (default) - all workers run local-only. Enable with `daemon start --headless`, daemon.aiWorkers.enabled=true, or RUFLO_DAEMON_AI_WORKERS=1 (#2661)
+[2026-07-16T13:17:53.655Z] [INFO] Scheduled map (interval: 900s, first run in 0s)
+[2026-07-16T13:17:53.656Z] [INFO] Scheduled audit (interval: 600s, first run in 120s)
+[2026-07-16T13:17:53.656Z] [INFO] Scheduled optimize (interval: 900s, first run in 240s)
+[2026-07-16T13:17:53.656Z] [INFO] Scheduled consolidate (interval: 1800s, first run in 360s)
+[2026-07-16T13:17:53.656Z] [INFO] Scheduled testgaps (interval: 1200s, first run in 480s)
+[2026-07-16T13:17:53.656Z] [INFO] Scheduled backup (interval: 86400s, first run in 600s)
+[2026-07-16T13:17:53.656Z] [INFO] Scheduled harness (interval: 21600s, first run in 720s)
+[2026-07-16T13:17:53.656Z] [INFO] Lifecycle monitor active (workspace-removal, ttl=43200s)
+[2026-07-16T13:17:53.656Z] [INFO] Daemon started (PID: 53148, CPUs: 8, workers: 7, maxCpuLoad: 6.4, minFreeMemoryPercent: 5%)
+[2026-07-16T13:17:53.657Z] [INFO] Worker map deferred: CPU load too high: 45.55
+[2026-07-16T13:19:53.658Z] [INFO] Worker audit deferred: CPU load too high: 9.99
+[2026-07-16T13:21:53.661Z] [INFO] Worker optimize deferred: Memory too low: 1.1% free
+[2026-07-16T13:23:53.314Z] [INFO] Worker consolidate deferred: CPU load too high: 15.14
+[2026-07-16T13:25:53.313Z] [INFO] Worker testgaps deferred: Memory too low: 1.1% free
+[2026-07-16T13:27:53.316Z] [INFO] Starting worker: backup (1/2 concurrent)
+[2026-07-16T13:27:53.317Z] [INFO] Worker backup completed in 2ms
+[2026-07-16T13:27:53.318Z] [INFO] Starting worker: map (1/2 concurrent)
+[2026-07-16T13:27:53.319Z] [INFO] Worker map completed in 1ms
+[2026-07-16T13:27:53.319Z] [INFO] Starting worker: audit (1/2 concurrent)
+[2026-07-16T13:27:53.320Z] [INFO] Starting worker: optimize (2/2 concurrent)
+[2026-07-16T13:27:53.322Z] [INFO] Worker audit completed in 3ms
+[2026-07-16T13:27:53.322Z] [INFO] Worker optimize completed in 2ms
+[2026-07-16T13:27:53.323Z] [INFO] Starting worker: consolidate (1/2 concurrent)
+[2026-07-16T13:27:53.324Z] [INFO] Consolidate worker: distillation skipped (no-db)
+[2026-07-16T13:27:53.324Z] [INFO] Starting worker: testgaps (2/2 concurrent)
+[2026-07-16T13:27:53.324Z] [INFO] Worker consolidate completed in 1ms
+[2026-07-16T13:27:53.325Z] [INFO] Worker testgaps completed in 1ms
+[2026-07-16T13:29:53.312Z] [INFO] Worker harness deferred: Memory too low: 2.0% free
+[2026-07-16T13:29:53.315Z] [INFO] Worker audit deferred: Memory too low: 1.9% free

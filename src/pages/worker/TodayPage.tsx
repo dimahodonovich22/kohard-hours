@@ -26,7 +26,6 @@ export function TodayPage() {
   const [shifts, setShifts] = useState<Shift[] | null>(null)
   const [objects, setObjects] = useState<SiteObject[]>([])
   const [view, setView] = useState<View>('idle')
-  const [arriveType, setArriveType] = useState<WorkType>('hourly')
   const [reviewed, setReviewed] = useState<Shift | null>(null)
   const date = todayKey()
 
@@ -61,7 +60,6 @@ export function TodayPage() {
           userId={user!.uid}
           userName={profile!.name}
           date={date}
-          workType={arriveType}
           objects={objects}
           onDone={() => setView('idle')}
           onCancel={() => setView('idle')}
@@ -77,13 +75,7 @@ export function TodayPage() {
           {open ? (
             <OpenShiftCard shift={open} onLeave={() => setView('leave')} />
           ) : (
-            <WorkTypeChoice
-              hasClosed={closed.length > 0}
-              onChoose={(type) => {
-                setArriveType(type)
-                setView('arrive')
-              }}
-            />
+            <StartHero hasClosed={closed.length > 0} onArrive={() => setView('arrive')} />
           )}
 
           {closed.length > 0 && (
@@ -113,46 +105,19 @@ export function TodayPage() {
   )
 }
 
-/** Выбор способа работы перед началом смены: по часам или по проекту */
-function WorkTypeChoice({ hasClosed, onChoose }: { hasClosed: boolean; onChoose: (t: WorkType) => void }) {
+/** Стартовый экран: одна кнопка «Я приехал». Тип работы возьмётся из объекта. */
+function StartHero({ hasClosed, onArrive }: { hasClosed: boolean; onArrive: () => void }) {
   const { t } = useTranslation()
   return (
     <Card className="animate-rise-1 overflow-hidden">
-      <div className="roof-stripes px-5 pb-6 pt-6">
-        <p className="mb-1 text-center text-balance text-slate">
-          {hasClosed ? t('shift.newShift') : t('shift.startHint')}
-        </p>
-        <p className="mb-4 text-center font-display text-base font-bold text-ink">{t('shift.todayQuestion')}</p>
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => onChoose('hourly')}
-            className="flex min-h-16 items-center gap-4 rounded-2xl bg-brand px-5 text-left text-white shadow-lift transition-colors active:bg-brand-dark"
-          >
-            <svg viewBox="0 0 24 24" className="size-8 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7.5V12l3 2" />
-            </svg>
-            <span>
-              <span className="block font-display text-lg font-bold">{t('shift.hourly')}</span>
-              <span className="block text-sm text-white/80">{t('shift.hourlyDesc')}</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onChoose('project')}
-            className="flex min-h-16 items-center gap-4 rounded-2xl bg-ink px-5 text-left text-white shadow-lift transition-colors active:bg-ink-soft"
-          >
-            <svg viewBox="0 0 24 24" className="size-8 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z" />
-              <path d="M4 8.5 12 13l8-4.5M12 13v7" />
-            </svg>
-            <span>
-              <span className="block font-display text-lg font-bold">{t('shift.project')}</span>
-              <span className="block text-sm text-white/70">{t('shift.projectDesc')}</span>
-            </span>
-          </button>
-        </div>
+      <div className="roof-stripes px-5 pb-6 pt-7 text-center">
+        <p className="mb-5 text-balance text-slate">{hasClosed ? t('shift.newShift') : t('shift.startHint')}</p>
+        <Button big onClick={onArrive} className="w-full">
+          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          {t('shift.arrive')}
+        </Button>
       </div>
     </Card>
   )
@@ -236,7 +201,6 @@ function ArriveForm({
   userId,
   userName,
   date,
-  workType,
   objects,
   onDone,
   onCancel,
@@ -244,17 +208,16 @@ function ArriveForm({
   userId: string
   userName: string
   date: string
-  workType: WorkType
   objects: SiteObject[]
   onDone: () => void
   onCancel: () => void
 }) {
   const { t } = useTranslation()
-  const isProject = workType === 'project'
   const hasObjects = objects.length > 0
   // Если справочник пуст — оставляем ручной ввод, чтобы работника не заблокировать
   const [objectId, setObjectId] = useState('')
   const [objectText, setObjectText] = useState('')
+  const [manualType, setManualType] = useState<WorkType>('hourly')
   const [objectError, setObjectError] = useState('')
   const [time, setTime] = useState(nowTime())
   // Ставка по умолчанию — та, что работник вводил в прошлый раз (обычно не меняется)
@@ -266,6 +229,10 @@ function ArriveForm({
   const [photoError, setPhotoError] = useState('')
 
   const selected = objects.find((o) => o.id === objectId)
+  // Тип смены берётся из выбранного объекта (или ручного переключателя, если объектов нет)
+  const workType: WorkType = hasObjects ? (selected?.workType ?? 'hourly') : manualType
+  const isProject = workType === 'project'
+  const chosen = hasObjects ? selected != null : true
   const objectName = hasObjects ? (selected?.name ?? '') : objectText.trim()
 
   async function submit(e: FormEvent) {
@@ -297,17 +264,16 @@ function ArriveForm({
 
   return (
     <Card className="animate-rise overflow-hidden">
-      <div className={`px-5 py-3.5 ${isProject ? 'bg-ink' : 'bg-brand'}`}>
+      <div className={`px-5 py-3.5 ${chosen && isProject ? 'bg-ink' : 'bg-brand'}`}>
         <h2 className="font-display font-bold text-white">
-          {t('shift.arrival')} · {isProject ? t('shift.project') : t('shift.hourly')}
+          {t('shift.arrival')}
+          {chosen ? ` · ${isProject ? t('shift.project') : t('shift.hourly')}` : ''}
         </h2>
       </div>
       <form onSubmit={submit} className="flex flex-col gap-4 p-5">
         {hasObjects ? (
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate">
-              {isProject ? t('shift.projectName') : t('shift.objectName')}
-            </span>
+            <span className="mb-1.5 block text-sm font-semibold text-slate">{t('shift.objectName')}</span>
             <div className="relative">
               <select
                 value={objectId}
@@ -324,7 +290,7 @@ function ArriveForm({
                 </option>
                 {objects.map((o) => (
                   <option key={o.id} value={o.id} className="text-ink">
-                    {o.name}
+                    {o.name} · {o.workType === 'project' ? t('shift.project') : t('shift.hourly')}
                   </option>
                 ))}
               </select>
@@ -332,10 +298,17 @@ function ArriveForm({
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </div>
+            {selected && (
+              <span className="mt-2 inline-flex">
+                <Chip tone={isProject ? 'peach' : 'mint'}>
+                  {isProject ? t('shift.project') : t('shift.hourly')}
+                </Chip>
+              </span>
+            )}
             {objectError && <span className="mt-1 block text-sm font-medium text-danger">{objectError}</span>}
           </label>
         ) : (
-          <div>
+          <div className="flex flex-col gap-2">
             <Field
               label={isProject ? t('shift.projectName') : t('shift.objectName')}
               placeholder={t('shift.objectPlaceholder')}
@@ -346,13 +319,25 @@ function ArriveForm({
               }}
               error={objectError}
             />
-            <p className="mt-1.5 text-xs text-slate">{t('shift.objectsEmptyWorker')}</p>
+            <div className="inline-flex self-start rounded-2xl bg-mist p-1">
+              {(['hourly', 'project'] as const).map((wt) => (
+                <button
+                  key={wt}
+                  type="button"
+                  onClick={() => setManualType(wt)}
+                  className={`min-h-9 rounded-xl px-4 text-sm font-bold transition-colors ${
+                    manualType === wt ? (wt === 'project' ? 'bg-ink text-white' : 'bg-brand text-white') : 'text-slate'
+                  }`}
+                >
+                  {t(`shift.${wt}`)}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-slate">{t('shift.objectsEmptyWorker')}</p>
           </div>
         )}
 
-        {isProject ? (
-          <TimeField label={t('shift.arrivalTime')} value={time} onChange={(e) => setTime(e.target.value)} required />
-        ) : (
+        {chosen && !isProject ? (
           <>
             <div className="grid grid-cols-2 gap-3">
               <TimeField label={t('shift.arrivalTime')} value={time} onChange={(e) => setTime(e.target.value)} required />
@@ -393,6 +378,8 @@ function ArriveForm({
               </button>
             )}
           </>
+        ) : (
+          <TimeField label={t('shift.arrivalTime')} value={time} onChange={(e) => setTime(e.target.value)} required />
         )}
 
         <PhotoCapture
